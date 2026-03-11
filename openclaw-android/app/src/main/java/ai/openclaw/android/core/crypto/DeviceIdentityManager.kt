@@ -127,6 +127,8 @@ class DeviceIdentityManager @Inject constructor(
         
         // 构建签名数据
         val dataToSign = "$nonce:$ts"
+        Log.d(TAG, "Signing data: $dataToSign (nonce=$nonce, ts=$ts)")
+        Log.d(TAG, "Data bytes: ${dataToSign.toByteArray(Charsets.UTF_8).joinToString(" ") { "%02x".format(it) }}")
         
         // 使用 Ed25519 签名（显式使用 BouncyCastle Provider）
         val signature = Signature.getInstance("Ed25519", ed25519Provider).apply {
@@ -135,10 +137,14 @@ class DeviceIdentityManager @Inject constructor(
         }
         
         val signatureBytes = signature.sign()
+        Log.d(TAG, "Signature length: ${signatureBytes.size} bytes")
+        Log.d(TAG, "Signature: ${signatureBytes.joinToString(" ") { "%02x".format(it) }}")
+        
         val signatureBase64Url = Base64.encodeToString(
             signatureBytes,
             Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
         )
+        Log.d(TAG, "Signature base64url: $signatureBase64Url")
         
         SignedChallenge(
             signature = signatureBase64Url,
