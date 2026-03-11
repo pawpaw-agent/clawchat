@@ -1,5 +1,6 @@
 package ai.openclaw.android.core.network
 
+import ai.openclaw.android.core.crypto.DeviceIdentityManager
 import ai.openclaw.android.core.network.model.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -28,6 +29,7 @@ class GatewayClient @Inject constructor(
     private var currentUrl: String? = null
     private var currentToken: String? = null
     private var reconnectJob: Job? = null
+    private var deviceIdentityManager: DeviceIdentityManager? = null
     
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
     val events: SharedFlow<WsFrame.Event> = _events.asSharedFlow()
@@ -35,10 +37,13 @@ class GatewayClient @Inject constructor(
 
     /**
      * 连接到 Gateway
+     * @param url Gateway WebSocket URL
+     * @param deviceIdentityManager 设备身份管理器，用于签名 challenge
+     * @param token 认证 Token（可选）
      */
     suspend fun connect(
         url: String,
-        deviceIdentity: DeviceIdentity,
+        deviceIdentityManager: DeviceIdentityManager,
         token: String? = null
     ): Result<HelloOk> = withContext(Dispatchers.IO) {
         if (_connectionState.value is ConnectionState.Connected) {
@@ -47,6 +52,7 @@ class GatewayClient @Inject constructor(
         
         currentUrl = url
         currentToken = token
+        this@GatewayClient.deviceIdentityManager = deviceIdentityManager
         
         val challengeResult = waitForChallenge(url)
         if (challengeResult.isFailure) {
@@ -58,7 +64,10 @@ class GatewayClient @Inject constructor(
             return@withContext Result.failure<HelloOk>(Exception("No challenge received"))
         }
         
-        return@withContext sendConnect(deviceIdentity, token)
+        // 使用 challenge 的 nonce 和 ts 签名设备身份
+        val signedIdentity = deviceIdentityManager.buildSignedDeviceIdentity(challenge.nonce, challenge.ts)
+        
+        return@withContext sendConnect(signedIdentity, token)
     }
 
     private suspend fun waitForChallenge(url: String): Result<Unit> {
@@ -133,8 +142,9 @@ class GatewayClient @Inject constructor(
         deviceIdentity: DeviceIdentity,
         token: String?
     ): Result<HelloOk> {
+        // 使用协议规定的 client.id
         val clientInfo = ClientInfo(
-            id = "android-app",
+            id = "cli",  // 协议规定值
             version = "0.1.0",
             platform = "android",
             mode = "operator"

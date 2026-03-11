@@ -61,11 +61,8 @@ class AuthRepository @Inject constructor(
         _lastError.value = null
 
         return try {
-            // 获取设备身份
-            val baseIdentity = deviceIdentityManager.getOrCreateDeviceIdentity()
-
-            // 发起连接
-            val result = gatewayClient.connect(url, baseIdentity, token)
+            // 直接传递 DeviceIdentityManager，让 GatewayClient 在收到 challenge 后签名
+            val result = gatewayClient.connect(url, deviceIdentityManager, token)
 
             result.fold(
                 onSuccess = { helloOk ->
