@@ -80,7 +80,7 @@ class ChatRepository @Inject constructor(
             })
         }
         
-        val result = gatewayClient.request<JsonObject>("chat.send", params)
+        val result = gatewayClient.request("chat.send", params)
         
         return result.map { response ->
             val runId = response["runId"]?.jsonPrimitive?.content ?: ""
@@ -111,7 +111,7 @@ class ChatRepository @Inject constructor(
             put("runId", runId)
         }
         
-        return gatewayClient.request<JsonObject>("chat.abort", params).map {
+        return gatewayClient.request("chat.abort", params).map {
             // 结束所有流式消息
             messageDao.finishAllStreaming(sessionKey)
         }
@@ -126,7 +126,7 @@ class ChatRepository @Inject constructor(
             put("limit", limit)
         }
         
-        val result = gatewayClient.request<JsonObject>("chat.history", params)
+        val result = gatewayClient.request("chat.history", params)
         
         return result.map { response ->
             val messagesArray = response["messages"]?.jsonArray

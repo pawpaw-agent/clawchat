@@ -6,11 +6,7 @@ import ai.openclaw.android.data.local.entity.SessionEntity
 import ai.openclaw.android.domain.model.Session
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.longOrNull
-import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -43,7 +39,7 @@ class SessionRepository @Inject constructor(
      * 从服务器同步会话列表
      */
     suspend fun syncSessions(): Result<List<Session>> {
-        val result = gatewayClient.request<JsonObject>("session.list")
+        val result = gatewayClient.request("session.list")
         
         return result.map { response ->
             val sessionsArray = response["sessions"]?.jsonArray
@@ -76,7 +72,7 @@ class SessionRepository @Inject constructor(
             label?.let { put("label", it) }
         }
         
-        val result = gatewayClient.request<JsonObject>("session.create", params)
+        val result = gatewayClient.request("session.create", params)
         
         return result.map { response ->
             val session = Session(
@@ -105,7 +101,7 @@ class SessionRepository @Inject constructor(
             put("key", key)
         }
         
-        return gatewayClient.request<JsonObject>("session.delete", params).map {
+        return gatewayClient.request("session.delete", params).map {
             sessionDao.deleteSessionByKey(key)
         }
     }

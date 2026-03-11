@@ -150,16 +150,27 @@ class GatewayClient @Inject constructor(
         )
         
         val params = json.encodeToJsonElement(connectParams).jsonObject
-        return requestHelloOk("connect", params)
+        return requestInternal("connect", params) { payload ->
+            json.decodeFromJsonElement<HelloOk>(payload)
+        }
     }
 
     /**
-     * 发送请求并等待响应（返回 HelloOk）
+     * 发送请求并等待响应（返回 JsonObject）
      */
-    private suspend fun requestHelloOk(
+    suspend fun request(
         method: String,
-        params: JsonObject?
-    ): Result<HelloOk> = withContext(Dispatchers.IO) {
+        params: JsonObject? = null
+    ): Result<JsonObject> = requestInternal(method, params) { it }
+
+    /**
+     * 内部请求方法
+     */
+    private suspend fun <T> requestInternal(
+        method: String,
+        params: JsonObject?,
+        transformer: (JsonObject) -> T
+    ): Result<T> = withContext(Dispatchers.IO) {
         val id = UUID.randomUUID().toString()
         val deferred = CompletableDeferred<WsFrame.Response>()
         pendingRequests[id] = deferred
@@ -173,18 +184,17 @@ class GatewayClient @Inject constructor(
             }
         )
         
-        webSocket?.send(jsonStr) ?: return@withContext Result.failure<HelloOk>(Exception("WebSocket not connected"))
+        webSocket?.send(jsonStr) ?: return@withContext Result.failure<T>(Exception("WebSocket not connected"))
         
         return@withContext try {
             val response = withTimeout(30000) { deferred.await() }
             if (response.ok && response.payload != null) {
-                val helloOk = json.decodeFromJsonElement<HelloOk>(response.payload)
-                Result.success(helloOk)
+                Result.success(transformer(response.payload))
             } else {
-                Result.failure<HelloOk>(Exception(response.error?.message ?: "Request failed"))
+                Result.failure<T>(Exception(response.error?.message ?: "Request failed"))
             }
         } catch (e: TimeoutCancellationException) {
-            Result.failure<HelloOk>(Exception("Request timeout"))
+            Result.failure<T>(Exception("Request timeout"))
         } finally {
             pendingRequests.remove(id)
         }
