@@ -3,7 +3,11 @@ package ai.openclaw.android.di
 import ai.openclaw.android.core.crypto.DeviceIdentityManager
 import ai.openclaw.android.core.crypto.SecureTokenStorage
 import ai.openclaw.android.core.network.GatewayClient
+import ai.openclaw.android.data.local.dao.MessageDao
+import ai.openclaw.android.data.local.dao.SessionDao
 import ai.openclaw.android.data.repository.AuthRepository
+import ai.openclaw.android.data.repository.ChatRepository
+import ai.openclaw.android.data.repository.SessionRepository
 import android.content.Context
 import dagger.Module
 import dagger.Provides
@@ -68,6 +72,23 @@ object AppModule {
         deviceIdentityManager: DeviceIdentityManager,
         secureTokenStorage: SecureTokenStorage
     ): AuthRepository = AuthRepository(gatewayClient, deviceIdentityManager, secureTokenStorage)
+
+    @Provides
+    @Singleton
+    fun provideSessionRepository(
+        sessionDao: SessionDao,
+        gatewayClient: GatewayClient,
+        json: Json
+    ): SessionRepository = SessionRepository(sessionDao, gatewayClient, json)
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(
+        messageDao: MessageDao,
+        sessionDao: SessionDao,
+        gatewayClient: GatewayClient,
+        json: Json
+    ): ChatRepository = ChatRepository(messageDao, sessionDao, gatewayClient, json)
 
     @Provides
     @Singleton

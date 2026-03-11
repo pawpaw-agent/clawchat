@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun ConnectScreen(
     onNavigateToPairing: (String) -> Unit,
+    onNavigateToSessions: () -> Unit = {},
     viewModel: ConnectViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -30,6 +31,13 @@ fun ConnectScreen(
     LaunchedEffect(uiState.pairingRequestId) {
         uiState.pairingRequestId?.let { requestId ->
             onNavigateToPairing(requestId)
+        }
+    }
+    
+    // 处理连接成功导航
+    LaunchedEffect(uiState.isConnected) {
+        if (uiState.isConnected) {
+            onNavigateToSessions()
         }
     }
 
