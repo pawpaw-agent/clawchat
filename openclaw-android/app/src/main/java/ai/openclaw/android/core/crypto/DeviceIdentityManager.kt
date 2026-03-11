@@ -5,15 +5,14 @@ import ai.openclaw.android.core.network.model.SignedChallenge
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import com.google.crypto.tink.*
-import com.google.crypto.tink.signature.PublicKeySignWrapper
-import com.google.crypto.tink.signature.SignatureKeyTemplates
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.security.KeyPair
 import java.security.KeyStore
 import java.security.Signature
+import java.security.interfaces.ECPublicKey
+import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -60,21 +59,23 @@ class DeviceIdentityManager @Inject constructor(
         } else {
             // 生成新的密钥对
             val keyPair = generateKeyPair()
-            val publicKeyBytes = keyPair.public.encoded
-            val publicKeyBase64 = Base64.getEncoder().encodeToString(publicKeyBytes)
             
-            // 从公钥派生设备 ID (SHA-256 前 16 字节)
-            val deviceId = deriveDeviceId(publicKeyBytes)
+            // 提取原始公钥字节（不是 SPKI 编码）
+            val publicKeyRaw = extractRawPublicKey(keyPair)
+            val publicKeyBase64Url = Base64.getUrlEncoder().withoutPadding().encodeToString(publicKeyRaw)
+            
+            // 从原始公钥派生设备 ID (SHA-256 完整哈希)
+            val deviceId = deriveDeviceId(publicKeyRaw)
             
             // 持久化
             prefs.edit()
                 .putString(KEY_DEVICE_ID, deviceId)
-                .putString(KEY_PUBLIC_KEY, publicKeyBase64)
+                .putString(KEY_PUBLIC_KEY, publicKeyBase64Url)
                 .apply()
             
             DeviceIdentity(
                 id = deviceId,
-                publicKey = publicKeyBase64,
+                publicKey = publicKeyBase64Url,
                 signature = "",
                 signedAt = 0,
                 nonce = ""
@@ -101,10 +102,10 @@ class DeviceIdentityManager @Inject constructor(
         }
         
         val signatureBytes = signature.sign()
-        val signatureBase64 = Base64.getEncoder().encodeToString(signatureBytes)
+        val signatureBase64Url = Base64.getUrlEncoder().withoutPadding().encodeToString(signatureBytes)
         
         SignedChallenge(
-            signature = signatureBase64,
+            signature = signatureBase64Url,
             signedAt = ts,
             nonce = nonce
         )
@@ -169,12 +170,40 @@ class DeviceIdentityManager @Inject constructor(
     }
 
     /**
-     * 从公钥派生设备 ID
-     * 使用 SHA-256 哈希公钥的 SPKI DER 编码，返回完整的十六进制字符串
+     * 提取原始公钥字节（去除 SPKI 包装）
+     * 对于 EC 密钥，返回未压缩的原始公钥（65 字节：0x04 + X + Y）
      */
-    private fun deriveDeviceId(publicKeyBytes: ByteArray): String {
+    private fun extractRawPublicKey(keyPair: KeyPair): ByteArray {
+        val publicKey = keyPair.public as? ECPublicKey
+            ?: throw IllegalStateException("Expected ECPublicKey")
+        
+        // 获取 EC 公钥参数
+        val w = publicKey.w
+        val x = w.affineX.toByteArray()
+        val y = w.affineY.toByteArray()
+        
+        // 构建 65 字节的未压缩公钥：0x04 || X (32字节) || Y (32字节)
+        val rawKey = ByteArray(65)
+        rawKey[0] = 0x04
+        
+        // X 坐标（填充到 32 字节）
+        val xOffset = maxOf(0, 32 - x.size)
+        System.arraycopy(x, maxOf(0, x.size - 32), rawKey, 1 + xOffset, minOf(32, x.size))
+        
+        // Y 坐标（填充到 32 字节）
+        val yOffset = maxOf(0, 32 - y.size)
+        System.arraycopy(y, maxOf(0, y.size - 32), rawKey, 1 + 32 + yOffset, minOf(32, y.size))
+        
+        return rawKey
+    }
+
+    /**
+     * 从原始公钥派生设备 ID
+     * 使用 SHA-256 哈希原始公钥字节，返回完整的十六进制字符串
+     */
+    private fun deriveDeviceId(publicKeyRaw: ByteArray): String {
         val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val hash = digest.digest(publicKeyBytes)
+        val hash = digest.digest(publicKeyRaw)
         // 返回完整的 32 字节（64 个十六进制字符），与服务器 fingerprintPublicKey 一致
         return hash.joinToString("") { "%02x".format(it) }
     }
