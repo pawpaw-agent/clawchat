@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Gradle wrapper script for Android builds
+# This script downloads and executes Gradle
+
+DEFAULT_GRADLE_VERSION="8.4"
+GRADLE_VERSION="${GRADLE_VERSION:-$DEFAULT_GRADLE_VERSION}"
+GRADLE_HOME="$HOME/.gradle/wrapper/dists/gradle-$GRADLE_VERSION-bin"
+GRADLE_URL="https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip"
+
+# Download Gradle if not present
+if [ ! -d "$GRADLE_HOME" ]; then
+    echo "Downloading Gradle $GRADLE_VERSION..."
+    mkdir -p "$GRADLE_HOME"
+    curl -fsSL "$GRADLE_URL" -o /tmp/gradle.zip
+    unzip -q /tmp/gradle.zip -d "$GRADLE_HOME/.."
+    mv "$GRADLE_HOME/../gradle-$GRADLE_VERSION" "$GRADLE_HOME" 2>/dev/null || true
+fi
+
+# Find Java
+if [ -z "$JAVA_HOME" ]; then
+    # Try common locations
+    for java_home in /usr/lib/jvm/java-17-openjdk /usr/lib/jvm/java-17 /usr/lib/jvm/default-java; do
+        if [ -x "$java_home/bin/java" ]; then
+            export JAVA_HOME="$java_home"
+            break
+        fi
+    done
+fi
+
+# Execute Gradle
+exec "$GRADLE_HOME/bin/gradle" "$@"
