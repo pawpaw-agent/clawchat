@@ -55,7 +55,7 @@ class PairingViewModel @Inject constructor(
         pollingJob = viewModelScope.launch {
             // 模拟轮询配对状态
             // 实际实现中，应该监听 Gateway 事件
-            gatewayClient.events().collect { event ->
+            gatewayClient.events.collect { event ->
                 when (event.event) {
                     "device.approved" -> {
                         val payload = event.payload

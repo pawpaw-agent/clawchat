@@ -2,9 +2,7 @@ package ai.openclaw.android.core.network
 
 import ai.openclaw.android.core.network.model.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import okhttp3.*
@@ -50,76 +48,81 @@ class GatewayClient @Inject constructor(
         currentUrl = url
         currentToken = token
         
-        return@withContext suspendCancellableCoroutine { continuation ->
-            _connectionState.value = ConnectionState.Connecting
+        try {
+            val challengeResult = waitForChallenge(url)
+            challengeResult.fold(
+                onSuccess = { _ ->
+                    val challenge = _challenge.value ?: return@Result.failure(Exception("No challenge received"))
+                    sendConnect(deviceIdentity, token)
+                },
+                onFailure = { Result.failure<HelloOk>(it) }
+            )
+        } catch (e: Exception) {
+            Result.failure<HelloOk>(e)
+        }
+    }
+
+    private suspend fun waitForChallenge(url: String): Result<Unit> = suspendCancellableCoroutine { continuation ->
+        _connectionState.value = ConnectionState.Connecting
+        
+        val listener = object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                // WebSocket 连接已建立，等待 challenge
+            }
             
-            val listener = object : WebSocketListener() {
-                override fun onOpen(webSocket: WebSocket, response: Response) {
-                    // WebSocket 连接已建立，等待 challenge
-                }
-                
-                override fun onMessage(webSocket: WebSocket, text: String) {
-                    try {
-                        val frame = parseFrame(text)
-                        when (frame) {
-                            is WsFrame.Event -> {
-                                if (frame.event == "connect.challenge") {
-                                    // 解析 challenge
-                                    val payload = frame.payload
-                                    val challenge = ConnectChallenge(
-                                        nonce = payload["nonce"]?.jsonPrimitive?.content ?: "",
-                                        ts = payload["ts"]?.jsonPrimitive?.longOrNull ?: System.currentTimeMillis()
-                                    )
-                                    _challenge.value = challenge
-                                    _connectionState.value = ConnectionState.ChallengeReceived(challenge)
-                                } else {
-                                    _events.tryEmit(frame)
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                try {
+                    val frame = parseFrame(text)
+                    when (frame) {
+                        is WsFrame.Event -> {
+                            if (frame.event == "connect.challenge") {
+                                val payload = frame.payload
+                                val challenge = ConnectChallenge(
+                                    nonce = payload["nonce"]?.jsonPrimitive?.content ?: "",
+                                    ts = payload["ts"]?.jsonPrimitive?.longOrNull ?: System.currentTimeMillis()
+                                )
+                                _challenge.value = challenge
+                                _connectionState.value = ConnectionState.ChallengeReceived(challenge)
+                                if (continuation.isActive) {
+                                    continuation.resumeWith(Result.success(Unit))
                                 }
+                            } else {
+                                _events.tryEmit(frame)
                             }
-                            is WsFrame.Response -> {
-                                pendingRequests[frame.id]?.complete(frame)
-                            }
-                            else -> { /* ignore */ }
                         }
-                    } catch (e: Exception) {
-                        // Log error
+                        is WsFrame.Response -> {
+                            pendingRequests[frame.id]?.complete(frame)
+                        }
+                        else -> { /* ignore */ }
                     }
+                } catch (e: Exception) {
+                    // Log error
                 }
-                
-                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                    webSocket.close(1000, null)
-                }
-                
-                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    _connectionState.value = ConnectionState.Disconnected
-                    clearPendingRequests()
-                }
-                
-                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    _connectionState.value = ConnectionState.Error(t.message ?: "Connection failed")
-                    clearPendingRequests()
+            }
+            
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                webSocket.close(1000, null)
+            }
+            
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                _connectionState.value = ConnectionState.Disconnected
+                clearPendingRequests()
+            }
+            
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                _connectionState.value = ConnectionState.Error(t.message ?: "Connection failed")
+                clearPendingRequests()
+                if (continuation.isActive) {
                     continuation.resumeWith(Result.failure(t))
                 }
             }
-            
-            val request = Request.Builder()
-                .url(url)
-                .build()
-            
-            this@GatewayClient.webSocket = okHttpClient.newWebSocket(request, listener)
-            
-            // 等待 challenge
-            CoroutineScope(Dispatchers.IO).launch {
-                val challenge = _challenge.filterNotNull().first()
-                continuation.resumeWith(Result.success(challenge))
-            }
-        }.let { challengeResult ->
-            // 发送 connect 请求
-            challengeResult.mapCatching { _ ->
-                val challenge = _challenge.value ?: throw Exception("No challenge received")
-                sendConnect(deviceIdentity, token).getOrThrow()
-            }
         }
+        
+        val request = Request.Builder()
+            .url(url)
+            .build()
+        
+        this@GatewayClient.webSocket = okHttpClient.newWebSocket(request, listener)
     }
 
     /**
@@ -151,29 +154,23 @@ class GatewayClient @Inject constructor(
     /**
      * 发送请求并等待响应
      */
-    suspend inline fun <reified T> request(
+    suspend fun <T> request(
         method: String,
         params: JsonObject? = null,
-        idempotencyKey: String? = null
+        idempotencyKey: String? = null,
+        deserializer: (JsonObject) -> T
     ): Result<T> = withContext(Dispatchers.IO) {
         val id = UUID.randomUUID().toString()
         val deferred = CompletableDeferred<WsFrame.Response>()
         pendingRequests[id] = deferred
         
-        val request = WsFrame.Request(
-            id = id,
-            method = method,
-            params = params,
-            idempotencyKey = idempotencyKey
-        )
-        
         val jsonStr = json.encodeToString(
             buildJsonObject {
                 put("type", "req")
-                put("id", request.id)
-                put("method", request.method)
-                request.params?.let { put("params", it) }
-                request.idempotencyKey?.let { put("idempotencyKey", it) }
+                put("id", id)
+                put("method", method)
+                params?.let { put("params", it) }
+                idempotencyKey?.let { put("idempotencyKey", it) }
             }
         )
         
@@ -182,7 +179,7 @@ class GatewayClient @Inject constructor(
         return@withContext try {
             val response = withTimeout(30000) { deferred.await() }
             if (response.ok && response.payload != null) {
-                Result.success(json.decodeFromJsonElement<T>(response.payload))
+                Result.success(deserializer(response.payload))
             } else {
                 Result.failure(Exception(response.error?.message ?: "Request failed"))
             }
@@ -191,6 +188,17 @@ class GatewayClient @Inject constructor(
         } finally {
             pendingRequests.remove(id)
         }
+    }
+
+    /**
+     * 发送请求并等待响应（内联版本，使用 Json 反序列化）
+     */
+    suspend inline fun <reified T> request(
+        method: String,
+        params: JsonObject? = null,
+        idempotencyKey: String? = null
+    ): Result<T> = request(method, params, idempotencyKey) { payload ->
+        json.decodeFromJsonElement<T>(payload)
     }
 
     /**
