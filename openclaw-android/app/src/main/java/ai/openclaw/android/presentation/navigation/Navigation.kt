@@ -5,10 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import ai.openclaw.android.presentation.screen.ChatScreen
-import ai.openclaw.android.presentation.screen.ConnectScreen
-import ai.openclaw.android.presentation.screen.PairingScreen
-import ai.openclaw.android.presentation.screen.SessionListScreen
+import ai.openclaw.android.presentation.screen.*
 
 sealed class Screen(val route: String) {
     object Connect : Screen("connect")
@@ -19,6 +16,10 @@ sealed class Screen(val route: String) {
     object Pairing : Screen("pairing/{requestId}") {
         fun createRoute(requestId: String) = "pairing/$requestId"
     }
+    object Channels : Screen("channels")
+    object Nodes : Screen("nodes")
+    object Approvals : Screen("approvals")
+    object Config : Screen("config")
 }
 
 @Composable
@@ -51,7 +52,6 @@ fun AppNavigation(
         }
         
         composable(Screen.Chat.route) { backStackEntry ->
-            val sessionKey = backStackEntry.arguments?.getString("sessionKey") ?: ""
             ChatScreen(
                 onNavigateBack = {
                     navController.popBackStack()
@@ -60,13 +60,28 @@ fun AppNavigation(
         }
         
         composable(Screen.Pairing.route) { backStackEntry ->
-            val requestId = backStackEntry.arguments?.getString("requestId") ?: ""
             PairingScreen(
-                requestId = requestId,
+                requestId = backStackEntry.arguments?.getString("requestId") ?: "",
                 onNavigateBack = {
                     navController.popBackStack()
                 }
             )
+        }
+        
+        composable(Screen.Channels.route) {
+            ChannelListScreen()
+        }
+        
+        composable(Screen.Nodes.route) {
+            NodeListScreen()
+        }
+        
+        composable(Screen.Approvals.route) {
+            ApprovalListScreen()
+        }
+        
+        composable(Screen.Config.route) {
+            ConfigScreen()
         }
     }
 }

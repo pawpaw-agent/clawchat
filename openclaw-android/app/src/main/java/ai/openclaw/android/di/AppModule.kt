@@ -5,9 +5,7 @@ import ai.openclaw.android.core.crypto.SecureTokenStorage
 import ai.openclaw.android.core.network.GatewayClient
 import ai.openclaw.android.data.local.dao.MessageDao
 import ai.openclaw.android.data.local.dao.SessionDao
-import ai.openclaw.android.data.repository.AuthRepository
-import ai.openclaw.android.data.repository.ChatRepository
-import ai.openclaw.android.data.repository.SessionRepository
+import ai.openclaw.android.data.repository.*
 import android.content.Context
 import dagger.Module
 import dagger.Provides
@@ -89,6 +87,34 @@ object AppModule {
         gatewayClient: GatewayClient,
         json: Json
     ): ChatRepository = ChatRepository(messageDao, sessionDao, gatewayClient, json)
+
+    @Provides
+    @Singleton
+    fun provideChannelRepository(
+        gatewayClient: GatewayClient,
+        json: Json
+    ): ChannelRepository = ChannelRepository(gatewayClient, json)
+
+    @Provides
+    @Singleton
+    fun provideNodeRepository(
+        gatewayClient: GatewayClient,
+        json: Json
+    ): NodeRepository = NodeRepository(gatewayClient, json)
+
+    @Provides
+    @Singleton
+    fun provideApprovalRepository(
+        gatewayClient: GatewayClient,
+        json: Json
+    ): ApprovalRepository = ApprovalRepository(gatewayClient, json)
+
+    @Provides
+    @Singleton
+    fun provideConfigRepository(
+        gatewayClient: GatewayClient,
+        json: Json
+    ): ConfigRepository = ConfigRepository(gatewayClient, json)
 
     @Provides
     @Singleton
