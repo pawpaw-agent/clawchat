@@ -3,17 +3,13 @@ package ai.openclaw.android.core.crypto
 import ai.openclaw.android.core.network.model.DeviceIdentity
 import ai.openclaw.android.core.network.model.SignedChallenge
 import android.content.Context
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
+import android.util.Base64
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.security.KeyPair
 import java.security.KeyPairGenerator
-import java.security.KeyStore
 import java.security.Signature
-import java.security.spec.ECGenParameterSpec
-import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,8 +17,7 @@ import javax.inject.Singleton
  * 设备身份管理器
  * 负责生成、存储设备密钥对（Ed25519），并对 challenge 进行签名
  * 
- * 注意：Ed25519 需要 Android API 27+ (Android 8.1+)
- * 在不支持 Ed25519 的设备上，会回退到 EC (secp256r1)
+ * 使用纯 Java Ed25519 实现（Android API 29+ 或通过 Conscrypt/BouncyCastle）
  */
 @Singleton
 class DeviceIdentityManager @Inject constructor(
@@ -30,26 +25,10 @@ class DeviceIdentityManager @Inject constructor(
     private val secureTokenStorage: SecureTokenStorage
 ) {
     companion object {
-        private const val KEY_ALIAS = "openclaw_device_key"
-        private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
         private const val PREFS_NAME = "openclaw_device_prefs"
         private const val KEY_DEVICE_ID = "device_id"
         private const val KEY_PUBLIC_KEY = "public_key"
-        
-        // Ed25519 SPKI DER 前缀：302a300506032b6570032100（12 字节）
-        // 后面跟 32 字节的原始公钥
-        private val ED25519_SPKI_PREFIX = byteArrayOf(
-            0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00
-        )
-        
-        // Ed25519 签名算法
-        private const val SIGNATURE_ALGORITHM_ED25519 = "Ed25519"
-        // EdDSA 签名算法（Java 标准名称）
-        private const val SIGNATURE_ALGORITHM_EDDSA = "EdDSA"
-    }
-
-    private val keyStore: KeyStore by lazy {
-        KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
+        private const val KEY_PRIVATE_KEY = "private_key"  // Base64 编码的私钥
     }
 
     /**
@@ -60,8 +39,9 @@ class DeviceIdentityManager @Inject constructor(
         
         val existingDeviceId = prefs.getString(KEY_DEVICE_ID, null)
         val existingPublicKey = prefs.getString(KEY_PUBLIC_KEY, null)
+        val existingPrivateKey = prefs.getString(KEY_PRIVATE_KEY, null)
         
-        if (existingDeviceId != null && existingPublicKey != null && keyStore.containsAlias(KEY_ALIAS)) {
+        if (existingDeviceId != null && existingPublicKey != null && existingPrivateKey != null) {
             // 已有身份，返回
             DeviceIdentity(
                 id = existingDeviceId,
@@ -71,20 +51,31 @@ class DeviceIdentityManager @Inject constructor(
                 nonce = ""
             )
         } else {
-            // 生成新的 Ed25519 密钥对
+            // 生成新的 Ed25519 密钥对（纯 Java 实现）
             val keyPair = generateEd25519KeyPair()
             
-            // 提取原始公钥（32 字节）
-            val publicKeyRaw = extractEd25519RawPublicKey(keyPair)
-            val publicKeyBase64Url = Base64.getUrlEncoder().withoutPadding().encodeToString(publicKeyRaw)
+            // 原始公钥（32 字节）
+            val publicKeyRaw = keyPair.public.encoded
+            val publicKeyBase64Url = Base64.encodeToString(
+                publicKeyRaw,
+                Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
+            )
             
-            // 从原始公钥派生设备 ID (SHA-256 完整哈希)
+            // 私钥（存储以便后续签名）
+            val privateKeyRaw = keyPair.private.encoded
+            val privateKeyBase64 = Base64.encodeToString(
+                privateKeyRaw,
+                Base64.DEFAULT
+            )
+            
+            // 从公钥派生设备 ID (SHA-256 完整哈希)
             val deviceId = deriveDeviceId(publicKeyRaw)
             
             // 持久化
             prefs.edit()
                 .putString(KEY_DEVICE_ID, deviceId)
                 .putString(KEY_PUBLIC_KEY, publicKeyBase64Url)
+                .putString(KEY_PRIVATE_KEY, privateKeyBase64)
                 .apply()
             
             DeviceIdentity(
@@ -101,32 +92,28 @@ class DeviceIdentityManager @Inject constructor(
      * 签名质询
      */
     suspend fun signChallenge(nonce: String, ts: Long): SignedChallenge = withContext(Dispatchers.IO) {
-        if (!keyStore.containsAlias(KEY_ALIAS)) {
-            throw IllegalStateException("Device key not found. Call getOrCreateDeviceIdentity() first.")
-        }
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val privateKeyBase64 = prefs.getString(KEY_PRIVATE_KEY, null)
+            ?: throw IllegalStateException("Device key not found. Call getOrCreateDeviceIdentity() first.")
+        
+        // 解码私钥
+        val privateKeyRaw = Base64.decode(privateKeyBase64, Base64.DEFAULT)
+        val keyPair = recreateKeyPair(privateKeyRaw)
         
         // 构建签名数据
         val dataToSign = "$nonce:$ts"
         
-        // 使用 Android Keystore 私钥签名
-        val privateKeyEntry = keyStore.getEntry(KEY_ALIAS, null) as KeyStore.PrivateKeyEntry
-        
-        // 尝试使用 Ed25519/EdDSA 签名
-        val signature = try {
-            Signature.getInstance(SIGNATURE_ALGORITHM_EDDSA).apply {
-                initSign(privateKeyEntry.privateKey)
-                update(dataToSign.toByteArray(Charsets.UTF_8))
-            }
-        } catch (e: Exception) {
-            // 回退到 Ed25519
-            Signature.getInstance(SIGNATURE_ALGORITHM_ED25519).apply {
-                initSign(privateKeyEntry.privateKey)
-                update(dataToSign.toByteArray(Charsets.UTF_8))
-            }
+        // 使用 Ed25519 签名
+        val signature = Signature.getInstance("Ed25519").apply {
+            initSign(keyPair.private)
+            update(dataToSign.toByteArray(Charsets.UTF_8))
         }
         
         val signatureBytes = signature.sign()
-        val signatureBase64Url = Base64.getUrlEncoder().withoutPadding().encodeToString(signatureBytes)
+        val signatureBase64Url = Base64.encodeToString(
+            signatureBytes,
+            Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
+        )
         
         SignedChallenge(
             signature = signatureBase64Url,
@@ -164,7 +151,6 @@ class DeviceIdentityManager @Inject constructor(
      */
     suspend fun clearAuth() {
         secureTokenStorage.clearTokens()
-        keyStore.deleteEntry(KEY_ALIAS)
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .clear()
@@ -172,64 +158,42 @@ class DeviceIdentityManager @Inject constructor(
     }
 
     /**
-     * 生成 Ed25519 密钥对
-     * Ed25519 需要 Android API 27+ (Android 8.1+)
+     * 生成 Ed25519 密钥对（纯 Java 实现）
      */
     private fun generateEd25519KeyPair(): KeyPair {
-        return try {
-            // 尝试使用 Android Keystore 生成 Ed25519 密钥
-            val keyPairGenerator = KeyPairGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_EC,
-                KEYSTORE_PROVIDER
-            )
-            
-            val spec = KeyGenParameterSpec.Builder(
-                KEY_ALIAS,
-                KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
-            )
-                .setAlgorithmParameterSpec(ECGenParameterSpec("ed25519"))
-                .setDigests(KeyProperties.DIGEST_NONE)  // Ed25519 不需要预哈希
-                .setUserAuthenticationRequired(false)
-                .build()
-            
-            keyPairGenerator.initialize(spec)
-            keyPairGenerator.generateKeyPair()
-        } catch (e: Exception) {
-            // 如果 Ed25519 不支持，回退到纯 Java 实现
-            // 注意：这不是 Android Keystore 密钥，安全性较低
-            generateEd25519KeyPairFallback()
-        }
-    }
-
-    /**
-     * 回退方案：使用纯 Java 生成 Ed25519 密钥对
-     * 注意：这不是 HSM 支持的密钥，安全性较低
-     */
-    private fun generateEd25519KeyPairFallback(): KeyPair {
         val keyPairGenerator = KeyPairGenerator.getInstance("Ed25519")
         return keyPairGenerator.generateKeyPair()
     }
 
     /**
-     * 从 Ed25519 公钥提取原始字节（32 字节）
-     * Ed25519 SPKI DER 格式：前缀（12 字节）+ 原始公钥（32 字节）
+     * 从私钥重新创建 KeyPair
+     * 注意：Ed25519 私钥编码包含公钥信息，所以可以重建完整 KeyPair
      */
-    private fun extractEd25519RawPublicKey(keyPair: KeyPair): ByteArray {
-        val encoded = keyPair.public.encoded
+    private fun recreateKeyPair(privateKeyRaw: ByteArray): KeyPair {
+        // 使用 KeyFactory 从编码重建私钥
+        val keyFactory = java.security.KeyFactory.getInstance("Ed25519")
+        val privateKeySpec = java.security.spec.PKCS8EncodedKeySpec(privateKeyRaw)
+        val privateKey = keyFactory.generatePrivate(privateKeySpec)
         
-        // 检查是否是 Ed25519 SPKI 格式
-        if (encoded.size == 44 && encoded.sliceArray(0..11).contentEquals(ED25519_SPKI_PREFIX)) {
-            // 提取 32 字节原始公钥
-            return encoded.sliceArray(12..43)
+        // Ed25519 私钥编码中包含公钥，需要提取
+        // PKCS#8 格式私钥中包含公钥部分
+        // 简化处理：重新生成或使用存储的公钥
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val publicKeyBase64 = prefs.getString(KEY_PUBLIC_KEY, null)
+        
+        if (publicKeyBase64 != null) {
+            val publicKeyRaw = Base64.decode(publicKeyBase64, Base64.URL_SAFE or Base64.NO_PADDING)
+            val publicKeySpec = java.security.spec.X509EncodedKeySpec(publicKeyRaw)
+            val publicKey = keyFactory.generatePublic(publicKeySpec)
+            return KeyPair(publicKey, privateKey)
         }
         
-        // 如果不是标准 SPKI 格式，返回完整编码（可能需要进一步处理）
-        throw IllegalStateException("Unexpected Ed25519 public key format: ${encoded.size} bytes")
+        throw IllegalStateException("Public key not found in storage")
     }
 
     /**
-     * 从原始公钥派生设备 ID
-     * 使用 SHA-256 哈希原始公钥字节，返回完整的十六进制字符串
+     * 从公钥派生设备 ID
+     * 使用 SHA-256 哈希公钥字节，返回完整的十六进制字符串
      */
     private fun deriveDeviceId(publicKeyRaw: ByteArray): String {
         val digest = java.security.MessageDigest.getInstance("SHA-256")
