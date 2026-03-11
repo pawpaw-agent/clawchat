@@ -1,6 +1,6 @@
 package ai.openclaw.android.presentation.theme
 
-import android.app.Activity
+import android.app.Application
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -11,6 +11,49 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+/**
+ * 主题模式
+ */
+enum class ThemeMode {
+    LIGHT,
+    DARK,
+    SYSTEM
+}
+
+/**
+ * 主题设置 ViewModel
+ */
+@HiltViewModel
+class ThemeViewModel @Inject constructor(
+    application: Application
+) : AndroidViewModel(application) {
+    
+    private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+    
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch {
+            _themeMode.value = mode
+        }
+    }
+    
+    fun isDarkTheme(systemInDarkTheme: Boolean): Boolean {
+        return when (_themeMode.value) {
+            ThemeMode.LIGHT -> false
+            ThemeMode.DARK -> true
+            ThemeMode.SYSTEM -> systemInDarkTheme
+        }
+    }
+}
 
 private val DarkColorScheme = darkColorScheme(
     primary = Color(0xFF6B9BFF),
@@ -77,16 +120,23 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun OpenClawTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val isDark = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> darkTheme
+    }
+    
+    val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
+            val window = (view.context as? android.app.Activity)?.window ?: return@SideEffect
             window.statusBarColor = colorScheme.surface.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDark
         }
     }
 

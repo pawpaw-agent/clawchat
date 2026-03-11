@@ -20,6 +20,7 @@ sealed class Screen(val route: String) {
     object Nodes : Screen("nodes")
     object Approvals : Screen("approvals")
     object Config : Screen("config")
+    object Settings : Screen("settings")
 }
 
 @Composable
@@ -82,6 +83,14 @@ fun AppNavigation(
         
         composable(Screen.Config.route) {
             ConfigScreen()
+        }
+        
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

@@ -1,6 +1,9 @@
 package ai.openclaw.android.di
 
 import ai.openclaw.android.data.local.AppDatabase
+import ai.openclaw.android.data.local.dao.GatewayConfigDao
+import ai.openclaw.android.data.local.dao.MessageDao
+import ai.openclaw.android.data.local.dao.SessionDao
 import android.content.Context
 import androidx.room.Room
 import dagger.Module
@@ -33,4 +36,7 @@ object DatabaseModule {
     
     @Provides
     fun provideMessageDao(database: AppDatabase) = database.messageDao()
+    
+    @Provides
+    fun provideGatewayConfigDao(database: AppDatabase) = database.gatewayConfigDao()
 }

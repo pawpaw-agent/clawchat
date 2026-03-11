@@ -118,5 +118,11 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideGatewayConfigRepository(
+        gatewayConfigDao: ai.openclaw.android.data.local.dao.GatewayConfigDao
+    ): GatewayConfigRepository = GatewayConfigRepository(gatewayConfigDao)
+
+    @Provides
+    @Singleton
     fun provideApplicationScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }
