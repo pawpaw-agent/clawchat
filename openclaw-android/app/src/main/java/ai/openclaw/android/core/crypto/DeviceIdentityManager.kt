@@ -120,7 +120,8 @@ class DeviceIdentityManager @Inject constructor(
         val clientId = "cli"
         val clientMode = "ui"
         val role = "operator"
-        val scopes = "chat,approval"
+        // IMPORTANT: scopes 必须与 GatewayClient 发送的 scopes 一致！
+        val scopes = "operator.read,operator.write"
         val signedAtMs = ts.toString()
         val tokenPart = token ?: ""
         
@@ -131,6 +132,7 @@ class DeviceIdentityManager @Inject constructor(
         Log.d(TAG, "challenge.nonce: $nonce")
         Log.d(TAG, "challenge.ts: $ts")
         Log.d(TAG, "token: $tokenPart")
+        Log.d(TAG, "scopes: $scopes (MUST match GatewayClient)")
         
         val payload = buildV2Payload(
             deviceId = deviceId,
