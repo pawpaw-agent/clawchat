@@ -142,6 +142,22 @@ class GatewayClient @Inject constructor(
         deviceIdentity: DeviceIdentity,
         token: String?
     ): Result<HelloOk> {
+        // 调试日志 - client 参数
+        android.util.Log.d("GatewayClient", "=== Connect Params Debug ===")
+        android.util.Log.d("GatewayClient", "client.id: cli")
+        android.util.Log.d("GatewayClient", "client.mode: ui")
+        android.util.Log.d("GatewayClient", "client.version: 0.1.0")
+        android.util.Log.d("GatewayClient", "client.platform: android")
+        android.util.Log.d("GatewayClient", "role: operator")
+        android.util.Log.d("GatewayClient", "scopes: [operator.read, operator.write]")
+        android.util.Log.d("GatewayClient", "device.id: ${deviceIdentity.id}")
+        android.util.Log.d("GatewayClient", "device.publicKey: ${deviceIdentity.publicKey}")
+        android.util.Log.d("GatewayClient", "device.signature: ${deviceIdentity.signature}")
+        android.util.Log.d("GatewayClient", "device.signedAt: ${deviceIdentity.signedAt}")
+        android.util.Log.d("GatewayClient", "device.nonce: ${deviceIdentity.nonce}")
+        android.util.Log.d("GatewayClient", "token: $token")
+        android.util.Log.d("GatewayClient", "=== End Connect Params ===")
+        
         // 手动构建 JSON，避免 null 值被序列化
         val params = buildJsonObject {
             put("minProtocol", 3)
@@ -173,6 +189,8 @@ class GatewayClient @Inject constructor(
                 put("nonce", deviceIdentity.nonce)
             })
         }
+        
+        android.util.Log.d("GatewayClient", "Connect JSON: ${json.encodeToString(params)}")
         
         return requestInternal("connect", params) { payload ->
             json.decodeFromJsonElement<HelloOk>(payload)
