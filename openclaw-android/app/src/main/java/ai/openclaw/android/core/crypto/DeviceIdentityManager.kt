@@ -170,11 +170,12 @@ class DeviceIdentityManager @Inject constructor(
 
     /**
      * 从公钥派生设备 ID
+     * 使用 SHA-256 哈希公钥的 SPKI DER 编码，返回完整的十六进制字符串
      */
     private fun deriveDeviceId(publicKeyBytes: ByteArray): String {
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         val hash = digest.digest(publicKeyBytes)
-        // 取前 16 字节，转换为十六进制
-        return hash.take(16).joinToString("") { "%02x".format(it) }
+        // 返回完整的 32 字节（64 个十六进制字符），与服务器 fingerprintPublicKey 一致
+        return hash.joinToString("") { "%02x".format(it) }
     }
 }
