@@ -4,14 +4,18 @@ import ai.openclaw.android.core.network.model.DeviceIdentity
 import ai.openclaw.android.core.network.model.SignedChallenge
 import android.content.Context
 import android.util.Base64
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.conscrypt.Conscrypt
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
+import java.security.Provider
 import java.security.PublicKey
+import java.security.Security
 import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
@@ -22,7 +26,7 @@ import javax.inject.Singleton
  * 设备身份管理器
  * 负责生成、存储设备密钥对（Ed25519），并对 challenge 进行签名
  * 
- * 使用纯 Java Ed25519 实现
+ * 使用 Conscrypt Provider 提供 Ed25519 支持
  */
 @Singleton
 class DeviceIdentityManager @Inject constructor(
@@ -30,11 +34,20 @@ class DeviceIdentityManager @Inject constructor(
     private val secureTokenStorage: SecureTokenStorage
 ) {
     companion object {
+        private const val TAG = "DeviceIdentity"
         private const val PREFS_NAME = "openclaw_device_prefs"
         private const val KEY_DEVICE_ID = "device_id"
-        private const val KEY_PUBLIC_KEY_RAW = "public_key_raw"  // 原始 32 字节公钥
-        private const val KEY_PUBLIC_KEY_DER = "public_key_der"  // X509 DER 编码公钥
-        private const val KEY_PRIVATE_KEY_DER = "private_key_der"  // PKCS8 DER 编码私钥
+        private const val KEY_PUBLIC_KEY_RAW = "public_key_raw"
+        private const val KEY_PUBLIC_KEY_DER = "public_key_der"
+        private const val KEY_PRIVATE_KEY_DER = "private_key_der"
+        
+        // Conscrypt Provider (lazy initialized)
+        private val conscryptProvider: Provider by lazy {
+            val provider = Conscrypt.newProvider()
+            Security.addProvider(provider)
+            Log.d(TAG, "Conscrypt provider added: ${provider.name}")
+            provider
+        }
     }
 
     // 缓存的密钥对
@@ -115,10 +128,7 @@ class DeviceIdentityManager @Inject constructor(
         // 构建签名数据
         val dataToSign = "$nonce:$ts"
         
-        // 使用 Ed25519 签名（显式指定 Conscrypt Provider）
-        val conscryptProvider = java.security.Security.getProvider("Conscrypt")
-            ?: throw IllegalStateException("Conscrypt provider not available")
-        
+        // 使用 Ed25519 签名（显式使用 Conscrypt Provider）
         val signature = Signature.getInstance("Ed25519", conscryptProvider).apply {
             initSign(keyPair.private)
             update(dataToSign.toByteArray(Charsets.UTF_8))
@@ -177,11 +187,7 @@ class DeviceIdentityManager @Inject constructor(
      * 生成 Ed25519 密钥对（使用 Conscrypt Provider）
      */
     private fun generateEd25519KeyPair(): KeyPair {
-        // 显式获取 Conscrypt Provider
-        val conscryptProvider = java.security.Security.getProvider("Conscrypt")
-            ?: throw IllegalStateException("Conscrypt provider not available")
-        
-        // 使用 Conscrypt Provider 生成 Ed25519 密钥对
+        Log.d(TAG, "Generating Ed25519 key pair with provider: ${conscryptProvider.name}")
         val keyPairGenerator = KeyPairGenerator.getInstance("Ed25519", conscryptProvider)
         return keyPairGenerator.generateKeyPair()
     }
@@ -189,17 +195,14 @@ class DeviceIdentityManager @Inject constructor(
     /**
      * 从 Ed25519 公钥提取原始字节（32 字节）
      * Ed25519 SPKI DER 格式：30 2a 30 05 06 03 2b 65 70 03 21 00 [32 bytes raw public key]
-     * 总共 44 字节，原始公钥在最后 32 字节
      */
     private fun extractEd25519RawPublicKey(publicKey: PublicKey): ByteArray {
         val encoded = publicKey.encoded
         
-        // Ed25519 SPKI DER 应该是 44 字节
         if (encoded.size != 44) {
             throw IllegalArgumentException("Invalid Ed25519 public key encoding: expected 44 bytes, got ${encoded.size}")
         }
         
-        // 提取最后 32 字节（原始公钥）
         return encoded.copyOfRange(12, 44)
     }
 
@@ -231,7 +234,6 @@ class DeviceIdentityManager @Inject constructor(
 
     /**
      * 从公钥派生设备 ID
-     * 使用 SHA-256 哈希公钥字节，返回完整的十六进制字符串
      */
     private fun deriveDeviceId(publicKeyRaw: ByteArray): String {
         val digest = java.security.MessageDigest.getInstance("SHA-256")
