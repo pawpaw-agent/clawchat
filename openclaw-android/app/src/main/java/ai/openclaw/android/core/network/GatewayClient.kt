@@ -48,17 +48,17 @@ class GatewayClient @Inject constructor(
         currentUrl = url
         currentToken = token
         
-        try {
-            val challengeResult = waitForChallenge(url)
-            if (challengeResult.isFailure) {
-                return@withContext Result.failure(challengeResult.exceptionOrNull() ?: Exception("Connection failed"))
-            }
-            
-            val challenge = _challenge.value ?: return@withContext Result.failure(Exception("No challenge received"))
-            sendConnect(deviceIdentity, token)
-        } catch (e: Exception) {
-            Result.failure<HelloOk>(e)
+        val challengeResult = waitForChallenge(url)
+        if (challengeResult.isFailure) {
+            return@withContext Result.failure<HelloOk>(challengeResult.exceptionOrNull() ?: Exception("Connection failed"))
         }
+        
+        val challenge = _challenge.value
+        if (challenge == null) {
+            return@withContext Result.failure<HelloOk>(Exception("No challenge received"))
+        }
+        
+        return@withContext sendConnect(deviceIdentity, token)
     }
 
     private suspend fun waitForChallenge(url: String): Result<Unit> = suspendCancellableCoroutine { continuation ->
@@ -147,18 +147,17 @@ class GatewayClient @Inject constructor(
             device = deviceIdentity
         )
         
-        return request<HelloOk>("connect", json.encodeToJsonElement(connectParams).jsonObject)
+        val params = json.encodeToJsonElement(connectParams).jsonObject
+        return requestHelloOk("connect", params)
     }
 
     /**
-     * 发送请求并等待响应
+     * 发送请求并等待响应（返回 HelloOk）
      */
-    suspend fun <T> requestRaw(
+    private suspend fun requestHelloOk(
         method: String,
-        params: JsonObject?,
-        idempotencyKey: String?,
-        deserializer: (JsonObject) -> T
-    ): Result<T> = withContext(Dispatchers.IO) {
+        params: JsonObject?
+    ): Result<HelloOk> = withContext(Dispatchers.IO) {
         val id = UUID.randomUUID().toString()
         val deferred = CompletableDeferred<WsFrame.Response>()
         pendingRequests[id] = deferred
@@ -169,35 +168,24 @@ class GatewayClient @Inject constructor(
                 put("id", id)
                 put("method", method)
                 params?.let { put("params", it) }
-                idempotencyKey?.let { put("idempotencyKey", it) }
             }
         )
         
-        webSocket?.send(jsonStr) ?: return@withContext Result.failure(Exception("WebSocket not connected"))
+        webSocket?.send(jsonStr) ?: return@withContext Result.failure<HelloOk>(Exception("WebSocket not connected"))
         
         return@withContext try {
             val response = withTimeout(30000) { deferred.await() }
             if (response.ok && response.payload != null) {
-                Result.success(deserializer(response.payload))
+                val helloOk = json.decodeFromJsonElement<HelloOk>(response.payload)
+                Result.success(helloOk)
             } else {
-                Result.failure(Exception(response.error?.message ?: "Request failed"))
+                Result.failure<HelloOk>(Exception(response.error?.message ?: "Request failed"))
             }
         } catch (e: TimeoutCancellationException) {
-            Result.failure(Exception("Request timeout"))
+            Result.failure<HelloOk>(Exception("Request timeout"))
         } finally {
             pendingRequests.remove(id)
         }
-    }
-
-    /**
-     * 发送请求并等待响应（泛型版本）
-     */
-    suspend inline fun <reified T> request(
-        method: String,
-        params: JsonObject? = null,
-        idempotencyKey: String? = null
-    ): Result<T> = requestRaw(method, params, idempotencyKey) { payload ->
-        json.decodeFromJsonElement<T>(payload)
     }
 
     /**
