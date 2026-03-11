@@ -50,13 +50,12 @@ class GatewayClient @Inject constructor(
         
         try {
             val challengeResult = waitForChallenge(url)
-            challengeResult.fold(
-                onSuccess = { _ ->
-                    val challenge = _challenge.value ?: return@Result.failure(Exception("No challenge received"))
-                    sendConnect(deviceIdentity, token)
-                },
-                onFailure = { Result.failure<HelloOk>(it) }
-            )
+            if (challengeResult.isFailure) {
+                return@withContext Result.failure(challengeResult.exceptionOrNull() ?: Exception("Connection failed"))
+            }
+            
+            val challenge = _challenge.value ?: return@withContext Result.failure(Exception("No challenge received"))
+            sendConnect(deviceIdentity, token)
         } catch (e: Exception) {
             Result.failure<HelloOk>(e)
         }
@@ -154,10 +153,10 @@ class GatewayClient @Inject constructor(
     /**
      * 发送请求并等待响应
      */
-    suspend fun <T> request(
+    suspend fun <T> requestRaw(
         method: String,
-        params: JsonObject? = null,
-        idempotencyKey: String? = null,
+        params: JsonObject?,
+        idempotencyKey: String?,
         deserializer: (JsonObject) -> T
     ): Result<T> = withContext(Dispatchers.IO) {
         val id = UUID.randomUUID().toString()
@@ -191,13 +190,13 @@ class GatewayClient @Inject constructor(
     }
 
     /**
-     * 发送请求并等待响应（内联版本，使用 Json 反序列化）
+     * 发送请求并等待响应（泛型版本）
      */
     suspend inline fun <reified T> request(
         method: String,
         params: JsonObject? = null,
         idempotencyKey: String? = null
-    ): Result<T> = request(method, params, idempotencyKey) { payload ->
+    ): Result<T> = requestRaw(method, params, idempotencyKey) { payload ->
         json.decodeFromJsonElement<T>(payload)
     }
 

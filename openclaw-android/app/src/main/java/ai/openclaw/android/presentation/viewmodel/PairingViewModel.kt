@@ -59,7 +59,9 @@ class PairingViewModel @Inject constructor(
                 when (event.event) {
                     "device.approved" -> {
                         val payload = event.payload
-                        val approvedRequestId = payload["requestId"]?.jsonPrimitive?.content
+                        val approvedRequestId = payload["requestId"]?.let { 
+                            (it as? JsonPrimitive)?.content 
+                        }
                         if (approvedRequestId == _uiState.value.requestId) {
                             _uiState.value = _uiState.value.copy(
                                 pairingState = PairingState.Approved,
@@ -70,7 +72,9 @@ class PairingViewModel @Inject constructor(
                     }
                     "device.rejected" -> {
                         val payload = event.payload
-                        val rejectedRequestId = payload["requestId"]?.jsonPrimitive?.content
+                        val rejectedRequestId = payload["requestId"]?.let { 
+                            (it as? JsonPrimitive)?.content 
+                        }
                         if (rejectedRequestId == _uiState.value.requestId) {
                             _uiState.value = _uiState.value.copy(
                                 pairingState = PairingState.Rejected("Device pairing was rejected")
@@ -96,3 +100,6 @@ class PairingViewModel @Inject constructor(
         pollingJob?.cancel()
     }
 }
+
+// Import for JsonPrimitive
+import kotlinx.serialization.json.JsonPrimitive
