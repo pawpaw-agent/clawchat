@@ -142,12 +142,12 @@ class GatewayClient @Inject constructor(
         deviceIdentity: DeviceIdentity,
         token: String?
     ): Result<HelloOk> {
-        // 使用协议规定的 client.id
+        // 使用协议规定的 client.id 和 client.mode
         val clientInfo = ClientInfo(
             id = "cli",  // 协议规定值
             version = "0.1.0",
             platform = "android",
-            mode = "operator"
+            mode = "ui"  // Android 使用 "ui"（协议规定：webchat/cli/ui/backend/node/probe/test）
         )
         
         val connectParams = ConnectParams(
