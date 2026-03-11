@@ -115,8 +115,11 @@ class DeviceIdentityManager @Inject constructor(
         // 构建签名数据
         val dataToSign = "$nonce:$ts"
         
-        // 使用 Ed25519 签名
-        val signature = Signature.getInstance("Ed25519").apply {
+        // 使用 Ed25519 签名（显式指定 Conscrypt Provider）
+        val conscryptProvider = java.security.Security.getProvider("Conscrypt")
+            ?: throw IllegalStateException("Conscrypt provider not available")
+        
+        val signature = Signature.getInstance("Ed25519", conscryptProvider).apply {
             initSign(keyPair.private)
             update(dataToSign.toByteArray(Charsets.UTF_8))
         }
@@ -171,10 +174,15 @@ class DeviceIdentityManager @Inject constructor(
     }
 
     /**
-     * 生成 Ed25519 密钥对
+     * 生成 Ed25519 密钥对（使用 Conscrypt Provider）
      */
     private fun generateEd25519KeyPair(): KeyPair {
-        val keyPairGenerator = KeyPairGenerator.getInstance("Ed25519")
+        // 显式获取 Conscrypt Provider
+        val conscryptProvider = java.security.Security.getProvider("Conscrypt")
+            ?: throw IllegalStateException("Conscrypt provider not available")
+        
+        // 使用 Conscrypt Provider 生成 Ed25519 密钥对
+        val keyPairGenerator = KeyPairGenerator.getInstance("Ed25519", conscryptProvider)
         return keyPairGenerator.generateKeyPair()
     }
 
@@ -210,7 +218,7 @@ class DeviceIdentityManager @Inject constructor(
         val publicKeyBytes = Base64.decode(pubDer, Base64.DEFAULT)
         val privateKeyBytes = Base64.decode(privDer, Base64.DEFAULT)
         
-        val keyFactory = KeyFactory.getInstance("Ed25519")
+        val keyFactory = KeyFactory.getInstance("Ed25519", conscryptProvider)
         
         val publicKey = keyFactory.generatePublic(X509EncodedKeySpec(publicKeyBytes))
         val privateKey = keyFactory.generatePrivate(PKCS8EncodedKeySpec(privateKeyBytes))
