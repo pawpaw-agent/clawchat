@@ -142,24 +142,38 @@ class GatewayClient @Inject constructor(
         deviceIdentity: DeviceIdentity,
         token: String?
     ): Result<HelloOk> {
-        // 使用协议规定的 client.id 和 client.mode
-        val clientInfo = ClientInfo(
-            id = "cli",  // 协议规定值
-            version = "0.1.0",
-            platform = "android",
-            mode = "ui"  // Android 使用 "ui"（协议规定：webchat/cli/ui/backend/node/probe/test）
-        )
+        // 手动构建 JSON，避免 null 值被序列化
+        val params = buildJsonObject {
+            put("minProtocol", 3)
+            put("maxProtocol", 3)
+            put("client", buildJsonObject {
+                put("id", "cli")
+                put("version", "0.1.0")
+                put("platform", "android")
+                put("mode", "ui")
+            })
+            put("role", "operator")
+            put("scopes", buildJsonArray {
+                add("operator.read")
+                add("operator.write")
+            })
+            // 只有当 token 不为空时才发送 auth 对象
+            if (!token.isNullOrBlank()) {
+                put("auth", buildJsonObject {
+                    put("token", token)
+                })
+            }
+            put("locale", "zh-CN")
+            put("userAgent", "openclaw-android/0.1.0")
+            put("device", buildJsonObject {
+                put("id", deviceIdentity.id)
+                put("publicKey", deviceIdentity.publicKey)
+                put("signature", deviceIdentity.signature)
+                put("signedAt", deviceIdentity.signedAt)
+                put("nonce", deviceIdentity.nonce)
+            })
+        }
         
-        val connectParams = ConnectParams(
-            client = clientInfo,
-            role = "operator",
-            scopes = listOf("operator.read", "operator.write"),
-            auth = AuthParams(token = token),
-            userAgent = "openclaw-android/0.1.0",
-            device = deviceIdentity
-        )
-        
-        val params = json.encodeToJsonElement(connectParams).jsonObject
         return requestInternal("connect", params) { payload ->
             json.decodeFromJsonElement<HelloOk>(payload)
         }
