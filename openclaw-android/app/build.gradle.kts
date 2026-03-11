@@ -100,6 +100,7 @@ dependencies {
 
     // Security
     implementation(libs.tink)
+    implementation("org.conscrypt:conscrypt-android:2.5.2")
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
