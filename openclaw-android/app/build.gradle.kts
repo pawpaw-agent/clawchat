@@ -100,7 +100,7 @@ dependencies {
 
     // Security
     implementation(libs.tink)
-    implementation("org.conscrypt:conscrypt-android:2.5.2")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.77")
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)

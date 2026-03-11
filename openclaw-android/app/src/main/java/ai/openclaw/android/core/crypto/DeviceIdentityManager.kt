@@ -8,7 +8,7 @@ import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.conscrypt.Conscrypt
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -41,11 +41,11 @@ class DeviceIdentityManager @Inject constructor(
         private const val KEY_PUBLIC_KEY_DER = "public_key_der"
         private const val KEY_PRIVATE_KEY_DER = "private_key_der"
         
-        // Conscrypt Provider (lazy initialized)
-        private val conscryptProvider: Provider by lazy {
-            val provider = Conscrypt.newProvider()
+        // BouncyCastle Provider (lazy initialized)
+        private val ed25519Provider: Provider by lazy {
+            val provider = BouncyCastleProvider()
             Security.addProvider(provider)
-            Log.d(TAG, "Conscrypt provider added: ${provider.name}")
+            Log.d(TAG, "BouncyCastle provider added: ${provider.name}")
             provider
         }
     }
@@ -128,8 +128,8 @@ class DeviceIdentityManager @Inject constructor(
         // 构建签名数据
         val dataToSign = "$nonce:$ts"
         
-        // 使用 Ed25519 签名（显式使用 Conscrypt Provider）
-        val signature = Signature.getInstance("Ed25519", conscryptProvider).apply {
+        // 使用 Ed25519 签名（显式使用 BouncyCastle Provider）
+        val signature = Signature.getInstance("Ed25519", ed25519Provider).apply {
             initSign(keyPair.private)
             update(dataToSign.toByteArray(Charsets.UTF_8))
         }
@@ -187,8 +187,8 @@ class DeviceIdentityManager @Inject constructor(
      * 生成 Ed25519 密钥对（使用 Conscrypt Provider）
      */
     private fun generateEd25519KeyPair(): KeyPair {
-        Log.d(TAG, "Generating Ed25519 key pair with provider: ${conscryptProvider.name}")
-        val keyPairGenerator = KeyPairGenerator.getInstance("Ed25519", conscryptProvider)
+        Log.d(TAG, "Generating Ed25519 key pair with provider: ${ed25519Provider.name}")
+        val keyPairGenerator = KeyPairGenerator.getInstance("Ed25519", ed25519Provider)
         return keyPairGenerator.generateKeyPair()
     }
 
@@ -221,7 +221,7 @@ class DeviceIdentityManager @Inject constructor(
         val publicKeyBytes = Base64.decode(pubDer, Base64.DEFAULT)
         val privateKeyBytes = Base64.decode(privDer, Base64.DEFAULT)
         
-        val keyFactory = KeyFactory.getInstance("Ed25519", conscryptProvider)
+        val keyFactory = KeyFactory.getInstance("Ed25519", ed25519Provider)
         
         val publicKey = keyFactory.generatePublic(X509EncodedKeySpec(publicKeyBytes))
         val privateKey = keyFactory.generatePrivate(PKCS8EncodedKeySpec(privateKeyBytes))
