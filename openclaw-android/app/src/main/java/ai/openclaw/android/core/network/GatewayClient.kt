@@ -61,67 +61,69 @@ class GatewayClient @Inject constructor(
         return@withContext sendConnect(deviceIdentity, token)
     }
 
-    private suspend fun waitForChallenge(url: String): Result<Unit> = suspendCancellableCoroutine { continuation ->
-        _connectionState.value = ConnectionState.Connecting
-        
-        val listener = object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                // WebSocket 连接已建立，等待 challenge
-            }
+    private suspend fun waitForChallenge(url: String): Result<Unit> {
+        return suspendCancellableCoroutine { continuation ->
+            _connectionState.value = ConnectionState.Connecting
             
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                try {
-                    val frame = parseFrame(text)
-                    when (frame) {
-                        is WsFrame.Event -> {
-                            if (frame.event == "connect.challenge") {
-                                val payload = frame.payload
-                                val challenge = ConnectChallenge(
-                                    nonce = payload["nonce"]?.jsonPrimitive?.content ?: "",
-                                    ts = payload["ts"]?.jsonPrimitive?.longOrNull ?: System.currentTimeMillis()
-                                )
-                                _challenge.value = challenge
-                                _connectionState.value = ConnectionState.ChallengeReceived(challenge)
-                                if (continuation.isActive) {
-                                    continuation.resumeWith(Result.success(Unit))
+            val listener = object : WebSocketListener() {
+                override fun onOpen(webSocket: WebSocket, response: Response) {
+                    // WebSocket 连接已建立，等待 challenge
+                }
+                
+                override fun onMessage(webSocket: WebSocket, text: String) {
+                    try {
+                        val frame = parseFrame(text)
+                        when (frame) {
+                            is WsFrame.Event -> {
+                                if (frame.event == "connect.challenge") {
+                                    val payload = frame.payload
+                                    val challenge = ConnectChallenge(
+                                        nonce = payload["nonce"]?.jsonPrimitive?.content ?: "",
+                                        ts = payload["ts"]?.jsonPrimitive?.longOrNull ?: System.currentTimeMillis()
+                                    )
+                                    _challenge.value = challenge
+                                    _connectionState.value = ConnectionState.ChallengeReceived(challenge)
+                                    if (continuation.isActive) {
+                                        continuation.resume(Result.success(Unit), null)
+                                    }
+                                } else {
+                                    _events.tryEmit(frame)
                                 }
-                            } else {
-                                _events.tryEmit(frame)
                             }
+                            is WsFrame.Response -> {
+                                pendingRequests[frame.id]?.complete(frame)
+                            }
+                            else -> { /* ignore */ }
                         }
-                        is WsFrame.Response -> {
-                            pendingRequests[frame.id]?.complete(frame)
-                        }
-                        else -> { /* ignore */ }
+                    } catch (e: Exception) {
+                        // Log error
                     }
-                } catch (e: Exception) {
-                    // Log error
+                }
+                
+                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    webSocket.close(1000, null)
+                }
+                
+                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                    _connectionState.value = ConnectionState.Disconnected
+                    clearPendingRequests()
+                }
+                
+                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    _connectionState.value = ConnectionState.Error(t.message ?: "Connection failed")
+                    clearPendingRequests()
+                    if (continuation.isActive) {
+                        continuation.resume(Result.failure(t), null)
+                    }
                 }
             }
             
-            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                webSocket.close(1000, null)
-            }
+            val request = Request.Builder()
+                .url(url)
+                .build()
             
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                _connectionState.value = ConnectionState.Disconnected
-                clearPendingRequests()
-            }
-            
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                _connectionState.value = ConnectionState.Error(t.message ?: "Connection failed")
-                clearPendingRequests()
-                if (continuation.isActive) {
-                    continuation.resumeWith(Result.failure(t))
-                }
-            }
+            this@GatewayClient.webSocket = okHttpClient.newWebSocket(request, listener)
         }
-        
-        val request = Request.Builder()
-            .url(url)
-            .build()
-        
-        this@GatewayClient.webSocket = okHttpClient.newWebSocket(request, listener)
     }
 
     /**
