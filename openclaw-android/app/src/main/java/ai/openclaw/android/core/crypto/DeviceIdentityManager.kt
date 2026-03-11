@@ -120,9 +120,17 @@ class DeviceIdentityManager @Inject constructor(
         val clientId = "cli"
         val clientMode = "ui"
         val role = "operator"
-        val scopes = "chat,approval"  // 根据需要调整
+        val scopes = "chat,approval"
         val signedAtMs = ts.toString()
         val tokenPart = token ?: ""
+        
+        // 调试日志
+        Log.d(TAG, "=== Device Identity Debug ===")
+        Log.d(TAG, "deviceId: $deviceId")
+        Log.d(TAG, "publicKey (base64url): ${baseIdentity.publicKey}")
+        Log.d(TAG, "challenge.nonce: $nonce")
+        Log.d(TAG, "challenge.ts: $ts")
+        Log.d(TAG, "token: $tokenPart")
         
         val payload = buildV2Payload(
             deviceId = deviceId,
@@ -138,6 +146,9 @@ class DeviceIdentityManager @Inject constructor(
         Log.d(TAG, "V2 Payload: $payload")
         
         val signatureBase64Url = signPayload(payload)
+        
+        Log.d(TAG, "signature (base64url): $signatureBase64Url")
+        Log.d(TAG, "=== End Debug ===")
         
         return baseIdentity.copy(
             signature = signatureBase64Url,
