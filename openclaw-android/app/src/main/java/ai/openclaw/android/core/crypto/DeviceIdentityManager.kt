@@ -25,8 +25,6 @@ import javax.inject.Singleton
 /**
  * 设备身份管理器
  * 负责生成、存储设备密钥对（Ed25519），并对 challenge 进行签名
- * 
- * 使用 Conscrypt Provider 提供 Ed25519 支持
  */
 @Singleton
 class DeviceIdentityManager @Inject constructor(
@@ -41,7 +39,6 @@ class DeviceIdentityManager @Inject constructor(
         private const val KEY_PUBLIC_KEY_DER = "public_key_der"
         private const val KEY_PRIVATE_KEY_DER = "private_key_der"
         
-        // BouncyCastle Provider (lazy initialized)
         private val ed25519Provider: Provider by lazy {
             val provider = BouncyCastleProvider()
             Security.addProvider(provider)
@@ -50,7 +47,6 @@ class DeviceIdentityManager @Inject constructor(
         }
     }
 
-    // 缓存的密钥对
     @Volatile
     private var cachedKeyPair: KeyPair? = null
 
@@ -67,7 +63,6 @@ class DeviceIdentityManager @Inject constructor(
         
         if (existingDeviceId != null && existingPublicKeyRaw != null && 
             existingPublicKeyDer != null && existingPrivateKeyDer != null) {
-            // 已有身份，加载密钥对到缓存
             loadKeyPairFromStorage(existingPublicKeyDer, existingPrivateKeyDer)
             
             DeviceIdentity(
@@ -78,25 +73,20 @@ class DeviceIdentityManager @Inject constructor(
                 nonce = ""
             )
         } else {
-            // 生成新的 Ed25519 密钥对
             val keyPair = generateEd25519KeyPair()
             cachedKeyPair = keyPair
             
-            // 提取原始公钥（32 字节）
             val publicKeyRaw = extractEd25519RawPublicKey(keyPair.public)
             val publicKeyRawBase64Url = Base64.encodeToString(
                 publicKeyRaw,
                 Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
             )
             
-            // 存储 DER 编码的公钥和私钥
             val publicKeyDer = keyPair.public.encoded
             val privateKeyDer = keyPair.private.encoded
             
-            // 从原始公钥派生设备 ID
             val deviceId = deriveDeviceId(publicKeyRaw)
             
-            // 持久化
             prefs.edit()
                 .putString(KEY_DEVICE_ID, deviceId)
                 .putString(KEY_PUBLIC_KEY_RAW, publicKeyRawBase64Url)
@@ -115,38 +105,41 @@ class DeviceIdentityManager @Inject constructor(
     }
 
     /**
-     * 签名质询
+     * 构建完整的设备身份（带签名）
+     * 使用 V2 payload 格式: v2|deviceId|clientId|clientMode|role|scopes|signedAtMs|token|nonce
      */
-    suspend fun signChallenge(nonce: String, ts: Long): SignedChallenge = withContext(Dispatchers.IO) {
-        // 使用缓存的密钥对，或从存储加载
-        val keyPair = cachedKeyPair ?: loadKeyPairFromStorage()
+    suspend fun buildSignedDeviceIdentity(
+        nonce: String,
+        ts: Long,
+        token: String? = null
+    ): DeviceIdentity {
+        val baseIdentity = getOrCreateDeviceIdentity()
         
-        if (keyPair == null) {
-            throw IllegalStateException("Device key not found. Call getOrCreateDeviceIdentity() first.")
-        }
+        // 构建 V2 payload 格式
+        val deviceId = baseIdentity.id
+        val clientId = "cli"
+        val clientMode = "ui"
+        val role = "operator"
+        val scopes = "chat,approval"  // 根据需要调整
+        val signedAtMs = ts.toString()
+        val tokenPart = token ?: ""
         
-        // 构建签名数据
-        val dataToSign = "$nonce:$ts"
-        Log.d(TAG, "Signing data: $dataToSign (nonce=$nonce, ts=$ts)")
-        Log.d(TAG, "Data bytes: ${dataToSign.toByteArray(Charsets.UTF_8).joinToString(" ") { "%02x".format(it) }}")
-        
-        // 使用 Ed25519 签名（显式使用 BouncyCastle Provider）
-        val signature = Signature.getInstance("Ed25519", ed25519Provider).apply {
-            initSign(keyPair.private)
-            update(dataToSign.toByteArray(Charsets.UTF_8))
-        }
-        
-        val signatureBytes = signature.sign()
-        Log.d(TAG, "Signature length: ${signatureBytes.size} bytes")
-        Log.d(TAG, "Signature: ${signatureBytes.joinToString(" ") { "%02x".format(it) }}")
-        
-        val signatureBase64Url = Base64.encodeToString(
-            signatureBytes,
-            Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
+        val payload = buildV2Payload(
+            deviceId = deviceId,
+            clientId = clientId,
+            clientMode = clientMode,
+            role = role,
+            scopes = scopes,
+            signedAtMs = signedAtMs,
+            token = tokenPart,
+            nonce = nonce
         )
-        Log.d(TAG, "Signature base64url: $signatureBase64Url")
         
-        SignedChallenge(
+        Log.d(TAG, "V2 Payload: $payload")
+        
+        val signatureBase64Url = signPayload(payload)
+        
+        return baseIdentity.copy(
             signature = signatureBase64Url,
             signedAt = ts,
             nonce = nonce
@@ -154,32 +147,75 @@ class DeviceIdentityManager @Inject constructor(
     }
 
     /**
-     * 构建完整的设备身份（带签名）
+     * 构建 V2 设备认证 payload
+     * 格式: v2|deviceId|clientId|clientMode|role|scopes|signedAtMs|token|nonce
      */
-    suspend fun buildSignedDeviceIdentity(nonce: String, ts: Long): DeviceIdentity {
-        val baseIdentity = getOrCreateDeviceIdentity()
-        val signedChallenge = signChallenge(nonce, ts)
+    private fun buildV2Payload(
+        deviceId: String,
+        clientId: String,
+        clientMode: String,
+        role: String,
+        scopes: String,
+        signedAtMs: String,
+        token: String,
+        nonce: String
+    ): String {
+        return listOf(
+            "v2",
+            deviceId,
+            clientId,
+            clientMode,
+            role,
+            scopes,
+            signedAtMs,
+            token,
+            nonce
+        ).joinToString("|")
+    }
+
+    /**
+     * 签名 payload
+     */
+    private suspend fun signPayload(payload: String): String = withContext(Dispatchers.IO) {
+        val keyPair = cachedKeyPair ?: loadKeyPairFromStorage()
         
-        return baseIdentity.copy(
-            signature = signedChallenge.signature,
-            signedAt = signedChallenge.signedAt,
-            nonce = nonce
+        if (keyPair == null) {
+            throw IllegalStateException("Device key not found. Call getOrCreateDeviceIdentity() first.")
+        }
+        
+        Log.d(TAG, "Signing payload: $payload")
+        Log.d(TAG, "Payload bytes: ${payload.toByteArray(Charsets.UTF_8).joinToString(" ") { "%02x".format(it) }}")
+        
+        val signature = Signature.getInstance("Ed25519", ed25519Provider).apply {
+            initSign(keyPair.private)
+            update(payload.toByteArray(Charsets.UTF_8))
+        }
+        
+        val signatureBytes = signature.sign()
+        Log.d(TAG, "Signature length: ${signatureBytes.size} bytes")
+        
+        Base64.encodeToString(
+            signatureBytes,
+            Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
         )
     }
 
     /**
-     * 获取设备 Token
+     * 旧方法 - 签名质询（保留兼容）
      */
+    suspend fun signChallenge(nonce: String, ts: Long): SignedChallenge {
+        val identity = buildSignedDeviceIdentity(nonce, ts)
+        return SignedChallenge(
+            signature = identity.signature,
+            signedAt = identity.signedAt,
+            nonce = identity.nonce
+        )
+    }
+
     suspend fun getDeviceToken(): String? = secureTokenStorage.getDeviceToken()
 
-    /**
-     * 保存设备 Token
-     */
     suspend fun saveDeviceToken(token: String) = secureTokenStorage.saveDeviceToken(token)
 
-    /**
-     * 清除所有认证数据
-     */
     suspend fun clearAuth() {
         secureTokenStorage.clearTokens()
         cachedKeyPair = null
@@ -189,19 +225,12 @@ class DeviceIdentityManager @Inject constructor(
             .apply()
     }
 
-    /**
-     * 生成 Ed25519 密钥对（使用 Conscrypt Provider）
-     */
     private fun generateEd25519KeyPair(): KeyPair {
         Log.d(TAG, "Generating Ed25519 key pair with provider: ${ed25519Provider.name}")
         val keyPairGenerator = KeyPairGenerator.getInstance("Ed25519", ed25519Provider)
         return keyPairGenerator.generateKeyPair()
     }
 
-    /**
-     * 从 Ed25519 公钥提取原始字节（32 字节）
-     * Ed25519 SPKI DER 格式：30 2a 30 05 06 03 2b 65 70 03 21 00 [32 bytes raw public key]
-     */
     private fun extractEd25519RawPublicKey(publicKey: PublicKey): ByteArray {
         val encoded = publicKey.encoded
         
@@ -212,9 +241,6 @@ class DeviceIdentityManager @Inject constructor(
         return encoded.copyOfRange(12, 44)
     }
 
-    /**
-     * 从存储加载密钥对
-     */
     private fun loadKeyPairFromStorage(
         publicKeyDerBase64: String? = null,
         privateKeyDerBase64: String? = null
@@ -238,9 +264,6 @@ class DeviceIdentityManager @Inject constructor(
         return keyPair
     }
 
-    /**
-     * 从公钥派生设备 ID
-     */
     private fun deriveDeviceId(publicKeyRaw: ByteArray): String {
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         val hash = digest.digest(publicKeyRaw)
