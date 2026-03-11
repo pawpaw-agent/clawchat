@@ -54,8 +54,9 @@ class DeviceIdentityManager @Inject constructor(
             // 生成新的 Ed25519 密钥对（纯 Java 实现）
             val keyPair = generateEd25519KeyPair()
             
-            // 原始公钥（32 字节）
-            val publicKeyRaw = keyPair.public.encoded
+            // 提取原始公钥（32 字节）
+            // Ed25519 SPKI DER 格式：12 字节前缀 + 32 字节原始公钥
+            val publicKeyRaw = extractEd25519RawPublicKey(keyPair.public.encoded)
             val publicKeyBase64Url = Base64.encodeToString(
                 publicKeyRaw,
                 Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
@@ -163,6 +164,26 @@ class DeviceIdentityManager @Inject constructor(
     private fun generateEd25519KeyPair(): KeyPair {
         val keyPairGenerator = KeyPairGenerator.getInstance("Ed25519")
         return keyPairGenerator.generateKeyPair()
+    }
+
+    /**
+     * 从 Ed25519 SPKI DER 编码中提取原始公钥（32 字节）
+     * Ed25519 SPKI DER 格式：30 2a 30 05 06 03 2b 65 70 03 21 00 [32 bytes raw public key]
+     * 总共 44 字节，原始公钥在最后 32 字节
+     */
+    private fun extractEd25519RawPublicKey(spkDerEncoded: ByteArray): ByteArray {
+        // Ed25519 SPKI DER 应该是 44 字节
+        if (spkDerEncoded.size != 44) {
+            throw IllegalArgumentException("Invalid Ed25519 public key encoding: expected 44 bytes, got ${spkDerEncoded.size}")
+        }
+        
+        // 检查 SPKI 前缀（可选，用于验证）
+        val expectedPrefix = byteArrayOf(
+            0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00
+        )
+        
+        // 提取最后 32 字节（原始公钥）
+        return spkDerEncoded.copyOfRange(12, 44)
     }
 
     /**
