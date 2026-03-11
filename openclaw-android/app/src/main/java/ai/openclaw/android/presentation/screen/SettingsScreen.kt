@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -182,36 +181,36 @@ private fun ThemeSelector(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
-        Column {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(
                 text = "Theme",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
             
-            selectableGroup {
-                ThemeMode.values().forEach { mode ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = mode == currentTheme,
-                                onClick = { onThemeSelected(mode) },
-                                role = Role.RadioButton
-                            )
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
+            ThemeMode.values().forEach { mode ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
                             selected = mode == currentTheme,
-                            onClick = null
+                            onClick = { onThemeSelected(mode) },
+                            role = Role.RadioButton
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = mode == currentTheme,
+                        onClick = null
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
             }
         }
@@ -312,7 +311,7 @@ private fun GatewayConfigItem(
 @Composable
 private fun AddGatewayDialog(
     onDismiss: () -> Unit,
-    onAdd: (name: String, url: String, token: String?) -> Unit
+    onAdd: (String, String, String?) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
