@@ -6,12 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonPrimitive
 import javax.inject.Inject
 
 /**
@@ -53,8 +52,7 @@ class PairingViewModel @Inject constructor(
     private fun startPolling() {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
-            // 模拟轮询配对状态
-            // 实际实现中，应该监听 Gateway 事件
+            // 监听 Gateway 事件
             gatewayClient.events.collect { event ->
                 when (event.event) {
                     "device.approved" -> {
@@ -100,6 +98,3 @@ class PairingViewModel @Inject constructor(
         pollingJob?.cancel()
     }
 }
-
-// Import for JsonPrimitive
-import kotlinx.serialization.json.JsonPrimitive
