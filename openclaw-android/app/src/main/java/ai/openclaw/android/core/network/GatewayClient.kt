@@ -64,8 +64,14 @@ class GatewayClient @Inject constructor(
             return@withContext Result.failure<HelloOk>(Exception("No challenge received"))
         }
         
-        // 使用 challenge 的 nonce 和 ts 签名设备身份
-        val signedIdentity = deviceIdentityManager.buildSignedDeviceIdentity(challenge.nonce, challenge.ts)
+        // 如果有 Token，不发送设备身份（让 Gateway 使用 Token 认证）
+        // 如果没有 Token，发送设备身份进行签名验证
+        val signedIdentity = if (token.isNullOrBlank()) {
+            deviceIdentityManager.buildSignedDeviceIdentity(challenge.nonce, challenge.ts)
+        } else {
+            // 有 Token 时，发送空的设备身份（不包含签名）
+            null
+        }
         
         return@withContext sendConnect(signedIdentity, token)
     }
@@ -139,7 +145,7 @@ class GatewayClient @Inject constructor(
      * 发送 connect 方法
      */
     private suspend fun sendConnect(
-        deviceIdentity: DeviceIdentity,
+        deviceIdentity: DeviceIdentity?,
         token: String?
     ): Result<HelloOk> {
         // 调试日志 - client 参数
@@ -150,12 +156,8 @@ class GatewayClient @Inject constructor(
         android.util.Log.d("GatewayClient", "client.platform: android")
         android.util.Log.d("GatewayClient", "role: operator")
         android.util.Log.d("GatewayClient", "scopes: [operator.read, operator.write]")
-        android.util.Log.d("GatewayClient", "device.id: ${deviceIdentity.id}")
-        android.util.Log.d("GatewayClient", "device.publicKey: ${deviceIdentity.publicKey}")
-        android.util.Log.d("GatewayClient", "device.signature: ${deviceIdentity.signature}")
-        android.util.Log.d("GatewayClient", "device.signedAt: ${deviceIdentity.signedAt}")
-        android.util.Log.d("GatewayClient", "device.nonce: ${deviceIdentity.nonce}")
-        android.util.Log.d("GatewayClient", "token: $token")
+        android.util.Log.d("GatewayClient", "device: ${if (deviceIdentity != null) "provided" else "not provided (using token auth)"}")
+        android.util.Log.d("GatewayClient", "token: ${if (token.isNullOrBlank()) "not provided" else "provided"}")
         android.util.Log.d("GatewayClient", "=== End Connect Params ===")
         
         // 手动构建 JSON，避免 null 值被序列化
@@ -181,13 +183,16 @@ class GatewayClient @Inject constructor(
             }
             put("locale", "zh-CN")
             put("userAgent", "openclaw-android/0.1.0")
-            put("device", buildJsonObject {
-                put("id", deviceIdentity.id)
-                put("publicKey", deviceIdentity.publicKey)
-                put("signature", deviceIdentity.signature)
-                put("signedAt", deviceIdentity.signedAt)
-                put("nonce", deviceIdentity.nonce)
-            })
+            // 只有当设备身份不为空时才发送 device 对象
+            if (deviceIdentity != null) {
+                put("device", buildJsonObject {
+                    put("id", deviceIdentity.id)
+                    put("publicKey", deviceIdentity.publicKey)
+                    put("signature", deviceIdentity.signature)
+                    put("signedAt", deviceIdentity.signedAt)
+                    put("nonce", deviceIdentity.nonce)
+                })
+            }
         }
         
         android.util.Log.d("GatewayClient", "Connect JSON: ${json.encodeToString(params)}")
