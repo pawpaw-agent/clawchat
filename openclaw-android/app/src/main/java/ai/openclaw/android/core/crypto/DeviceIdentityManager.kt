@@ -5,6 +5,11 @@ import ai.openclaw.android.core.network.model.SignedChallenge
 import android.content.Context
 import android.util.Base64
 import android.util.Log
+import com.google.crypto.tink.TinkProtoKeysetFormat
+import com.google.crypto.tink.PublicKeySign
+import com.google.crypto.tink.KeysetHandle
+import com.google.crypto.tink.signature.SignatureConfig
+import com.google.crypto.tink.signature.SignatureKeyTemplates
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,7 +34,7 @@ class DeviceIdentityManager @Inject constructor(
     }
 
     @Volatile
-    private var cachedKeysetHandle: com.google.crypto.tink.KeysetHandle? = null
+    private var cachedKeysetHandle: KeysetHandle? = null
     private var cachedPublicKeyRaw: ByteArray? = null
 
     /**
@@ -46,7 +51,7 @@ class DeviceIdentityManager @Inject constructor(
             // 加载已存在的密钥
             try {
                 val keysetBytes = Base64.decode(existingKeysetHandle, Base64.DEFAULT)
-                cachedKeysetHandle = com.google.crypto.tink.KeysetHandle.deserializeFromBytes(keysetBytes)
+                cachedKeysetHandle = TinkProtoKeysetFormat.parseKeyset(keysetBytes, com.google.crypto.tink.secret.KeyAccess.publicAccess())
                 cachedPublicKeyRaw = Base64.decode(existingPublicKeyRaw, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
 
                 Log.d(TAG, "Loaded existing device identity: $existingDeviceId")
@@ -75,35 +80,37 @@ class DeviceIdentityManager @Inject constructor(
 
         // 注册 Tink Signature 配置
         try {
-            com.google.crypto.tink.signature.SignatureConfig.register()
+            SignatureConfig.register()
         } catch (e: Exception) {
             Log.w(TAG, "Signature config already registered or registration failed", e)
         }
 
         // 生成 Ed25519 密钥对
-        val keysetHandle = com.google.crypto.tink.KeysetHandle.generateNew(
-            com.google.crypto.tink.signature.SignatureKeyTemplates.ED25519
-        )
+        val keysetHandle = KeysetHandle.generateNew(SignatureKeyTemplates.ED25519)
 
-        // 获取公钥原始字节
+        // 获取公钥原始字节（Ed25519公钥是32字节）
         val publicKeyHandle = keysetHandle.publicKeysetHandle
-        val publicKeyBytes = publicKeyHandle.keySet.getPrimary().key.getBytes()
+        val publicKeyBytes = TinkProtoKeysetFormat.serializeKeyset(publicKeyHandle, com.google.crypto.tink.secret.KeyAccess.publicAccess())
+        
+        // 从序列化的公钥keyset中提取原始公钥字节
+        // Ed25519公钥在Tink中的格式是: 32字节的原始公钥
+        val publicKeyRaw = extractPublicKeyBytes(publicKeyHandle)
 
         // 缓存
         cachedKeysetHandle = keysetHandle
-        cachedPublicKeyRaw = publicKeyBytes
+        cachedPublicKeyRaw = publicKeyRaw
 
         // 派生设备 ID
-        val deviceId = deriveDeviceId(publicKeyBytes)
+        val deviceId = deriveDeviceId(publicKeyRaw)
 
         // 编码
         val publicKeyRawBase64Url = Base64.encodeToString(
-            publicKeyBytes,
+            publicKeyRaw,
             Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
         )
 
         val keysetHandleBase64 = Base64.encodeToString(
-            keysetHandle.serializeToBytes(),
+            TinkProtoKeysetFormat.serializeKeyset(keysetHandle, com.google.crypto.tink.secret.KeyAccess.publicAccess()),
             Base64.DEFAULT
         )
 
@@ -123,6 +130,25 @@ class DeviceIdentityManager @Inject constructor(
             signedAt = 0,
             nonce = ""
         )
+    }
+    
+    /**
+     * 从 publicKeysetHandle 提取原始公钥字节
+     */
+    private fun extractPublicKeyBytes(publicKeysetHandle: KeysetHandle): ByteArray {
+        // Ed25519 公钥是 32 字节
+        // 使用 TinkProtoKeysetFormat 序列化后解析
+        val serialized = TinkProtoKeysetFormat.serializeKeyset(publicKeysetHandle, com.google.crypto.tink.secret.KeyAccess.publicAccess())
+        // 解析 proto 找到公钥数据
+        val keyset = com.google.crypto.tink.proto.Keyset.parseFrom(serialized)
+        val key = keyset.keyList.firstOrNull { key -> key.status == com.google.crypto.tink.proto.KeyStatusType.ENABLED }
+            ?: throw IllegalStateException("No enabled key found")
+        // Ed25519 公钥在 keyData 中
+        val keyData = key.keyData
+        // Ed25519 公钥格式: type_url = "type.googleapis.com/google.crypto.tink.Ed25519PublicKey"
+        // value = Ed25519PublicKey proto
+        val ed25519PublicKey = com.google.crypto.tink.proto.Ed25519PublicKey.parseFrom(keyData.value)
+        return ed25519PublicKey.keyValue.toByteArray()
     }
 
     /**
@@ -217,7 +243,7 @@ class DeviceIdentityManager @Inject constructor(
         Log.d(TAG, "Payload: $payload")
 
         try {
-            val signer = keysetHandle.getPrimitive(com.google.crypto.tink.PublicKeySign::class.java)
+            val signer = keysetHandle.getPrimitive(PublicKeySign::class.java)
             val signatureBytes = signer.sign(payload.toByteArray(Charsets.UTF_8))
 
             Log.d(TAG, "Signature length: ${signatureBytes.size} bytes")
@@ -235,13 +261,13 @@ class DeviceIdentityManager @Inject constructor(
     /**
      * 从存储加载密钥集
      */
-    private fun loadKeysetFromStorage(): com.google.crypto.tink.KeysetHandle? {
+    private fun loadKeysetFromStorage(): KeysetHandle? {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val keysetHandleBase64 = prefs.getString(KEY_KEYSET_HANDLE, null) ?: return null
 
         return try {
             val keysetBytes = Base64.decode(keysetHandleBase64, Base64.DEFAULT)
-            cachedKeysetHandle = com.google.crypto.tink.KeysetHandle.deserializeFromBytes(keysetBytes)
+            cachedKeysetHandle = TinkProtoKeysetFormat.parseKeyset(keysetBytes, com.google.crypto.tink.secret.KeyAccess.publicAccess())
             cachedKeysetHandle
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load keyset from storage", e)
