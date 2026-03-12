@@ -34,21 +34,29 @@ class SessionRepository @Inject constructor(
     
     /**
      * 从服务器同步会话列表
-     * 注意：session.list API 暂不支持，返回固定的 main session
+     * 注意：session.list API 暂不支持，使用固定的 main session
      */
     suspend fun syncSessions(): Result<List<Session>> {
-        // Gateway 不支持 session.list，返回固定的 main session
-        val mainSession = Session(
-            key = "main",
-            label = "Main",
-            channel = null,
-            provider = null,
-            model = null,
-            createdAt = System.currentTimeMillis(),
-            updatedAt = System.currentTimeMillis(),
-            messageCount = 0
-        )
-        return Result.success(listOf(mainSession))
+        // Gateway 不支持 session.list，确保本地有 main session
+        val existingMain = sessionDao.getSessionByKey("main")
+        if (existingMain == null) {
+            // 创建并保存 main session
+            val mainEntity = SessionEntity(
+                key = "main",
+                label = "Main",
+                channel = null,
+                provider = null,
+                model = null,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
+                messageCount = 0
+            )
+            sessionDao.insertSession(mainEntity)
+        }
+        
+        // 返回本地所有 sessions
+        val sessions = sessionDao.getAllSessionsOnce().map { it.toDomain() }
+        return Result.success(sessions)
     }
     
     /**

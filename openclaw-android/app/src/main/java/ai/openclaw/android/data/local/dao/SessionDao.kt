@@ -9,6 +9,9 @@ interface SessionDao {
     @Query("SELECT * FROM sessions ORDER BY updatedAt DESC")
     fun getAllSessions(): Flow<List<SessionEntity>>
     
+    @Query("SELECT * FROM sessions ORDER BY updatedAt DESC")
+    suspend fun getAllSessionsOnce(): List<SessionEntity>
+    
     @Query("SELECT * FROM sessions WHERE `key` = :key")
     suspend fun getSessionByKey(key: String): SessionEntity?
     
