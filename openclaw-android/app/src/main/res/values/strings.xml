@@ -75,7 +75,6 @@
     <string name="pairing_rejected_desc">The pairing request was rejected. Please try again.</string>
     <string name="pairing_failed">Pairing Failed</string>
     <string name="pairing_waiting_desc">Please approve this device on your Gateway CLI to continue.</string>
-    <string name="pairing_rejected_desc">The pairing request was rejected. Please try again.</string>
     <string name="pairing_code">Pairing Code</string>
     <string name="pairing_run_command">Run this command on your Gateway:</string>
     <string name="pairing_retry">Retry Pairing</string>
