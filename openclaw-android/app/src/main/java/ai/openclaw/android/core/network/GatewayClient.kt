@@ -174,6 +174,9 @@ class GatewayClient @Inject constructor(
             put("scopes", buildJsonArray {
                 add("operator.read")
                 add("operator.write")
+                add("operator.admin")
+                add("operator.approvals")
+                add("operator.pairing")
             })
             // 只有当 token 不为空时才发送 auth 对象
             if (!token.isNullOrBlank()) {
