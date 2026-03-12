@@ -1,5 +1,6 @@
 package ai.openclaw.android.presentation.screen
 
+import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.ChannelConnectionStatus
 import ai.openclaw.android.domain.model.ChannelStatus
 import ai.openclaw.android.presentation.viewmodel.ChannelListViewModel
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -34,10 +36,10 @@ fun ChannelListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Channels") },
+                title = { Text(stringResource(R.string.channels_title)) },
                 actions = {
                     IconButton(onClick = { viewModel.syncChannels() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.dashboard_refresh))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -65,7 +67,7 @@ fun ChannelListScreen(
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No channels configured", color = MaterialTheme.colorScheme.outline)
+                    Text(stringResource(R.string.channels_no_channels), color = MaterialTheme.colorScheme.outline)
                 }
             } else {
                 LazyColumn(
@@ -103,14 +105,14 @@ fun ChannelListScreen(
                 showQrDialog = false
                 viewModel.clearQrCode()
             },
-            title = { Text("Scan QR Code") },
+            title = { Text(stringResource(R.string.channels_scan_qr)) },
             text = {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "Scan this QR code with your messaging app:",
+                        stringResource(R.string.channels_scan_desc),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -144,7 +146,7 @@ fun ChannelListScreen(
                     showQrDialog = false
                     viewModel.clearQrCode()
                 }) {
-                    Text("Done")
+                    Text(stringResource(R.string.channels_done))
                 }
             }
         )
@@ -217,19 +219,19 @@ private fun ChannelItem(
                     Button(onClick = onQrClick) {
                         Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Show QR")
+                        Text(stringResource(R.string.channels_show_qr))
                     }
                 } else if (channel.status == ChannelConnectionStatus.CONNECTED) {
                     OutlinedButton(onClick = onDisconnect) {
                         Icon(Icons.Default.LinkOff, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Disconnect")
+                        Text(stringResource(R.string.channels_disconnect))
                     }
                 } else {
                     Button(onClick = onReconnect) {
                         Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Reconnect")
+                        Text(stringResource(R.string.channels_reconnect))
                     }
                 }
             }

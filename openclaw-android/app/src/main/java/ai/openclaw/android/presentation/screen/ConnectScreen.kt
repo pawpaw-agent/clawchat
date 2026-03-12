@@ -1,5 +1,6 @@
 package ai.openclaw.android.presentation.screen
 
+import ai.openclaw.android.R
 import ai.openclaw.android.core.network.ConnectionState
 import ai.openclaw.android.presentation.viewmodel.ConnectViewModel
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation

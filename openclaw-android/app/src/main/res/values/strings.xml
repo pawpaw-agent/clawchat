@@ -1,4 +1,126 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">OpenClaw</string>
+    
+    <!-- Bottom Navigation -->
+    <string name="nav_sessions">Sessions</string>
+    <string name="nav_manage">Manage</string>
+    <string name="nav_settings">Settings</string>
+    
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_zh">中文</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_enabled">Enable Notifications</string>
+    <string name="settings_notifications_desc">Receive alerts for new messages and approvals</string>
+    <string name="settings_connection">Connection</string>
+    <string name="settings_auto_reconnect">Auto Reconnect</string>
+    <string name="settings_auto_reconnect_desc">Automatically reconnect when connection is lost</string>
+    <string name="settings_gateways">Gateway Configurations</string>
+    <string name="settings_add_gateway">Add Gateway</string>
+    <string name="settings_no_gateways">No gateway configurations yet. Tap + to add one.</string>
+    <string name="settings_gateway_name">Name</string>
+    <string name="settings_gateway_url">URL</string>
+    <string name="settings_gateway_token">Token (Optional)</string>
+    <string name="settings_gateway_add">Add</string>
+    <string name="settings_cancel">Cancel</string>
+    <string name="settings_default">Default</string>
+    <string name="settings_delete">Delete</string>
+    
+    <!-- Dashboard Screen -->
+    <string name="dashboard_title">Management</string>
+    <string name="dashboard_refresh">Refresh</string>
+    <string name="dashboard_gateway_status">Gateway Status</string>
+    <string name="dashboard_connected">Connected</string>
+    <string name="dashboard_disconnected">Disconnected</string>
+    <string name="dashboard_connecting">Connecting…</string>
+    <string name="dashboard_authenticating">Authenticating…</string>
+    <string name="dashboard_error">Error</string>
+    <string name="dashboard_channels">Channels</string>
+    <string name="dashboard_channels_online">online</string>
+    <string name="dashboard_pending_approvals">Pending Approvals</string>
+    <string name="dashboard_no_pending">No pending</string>
+    <string name="dashboard_quick_actions">Quick Actions</string>
+    <string name="dashboard_sync_all">Sync All</string>
+    
+    <!-- Connect Screen -->
+    <string name="connect_title">OpenClaw</string>
+    <string name="connect_to_gateway">Connect to Gateway</string>
+    <string name="connect_gateway_url">Gateway URL</string>
+    <string name="connect_token">Token (Optional)</string>
+    <string name="connect_token_hint">Leave empty for pairing flow</string>
+    <string name="connect_button">Connect</string>
+    <string name="connect_connecting">Connecting…</string>
+    <string name="connect_disconnect">Disconnect</string>
+    <string name="connect_status_connected">Connected</string>
+    <string name="connect_status_disconnected">Disconnected</string>
+    <string name="connect_status_ready">Ready</string>
+    <string name="connect_status_error">Error</string>
+    <string name="connect_help">Enter your Gateway URL to connect. If no token is provided, you will need to pair the device.</string>
+    
+    <!-- Pairing Screen -->
+    <string name="pairing_title">Device Pairing</string>
+    <string name="pairing_waiting">Waiting for Approval</string>
+    <string name="pairing_paired">Device Paired!</string>
+    <string name="pairing_paired_desc">Your device has been successfully paired with the Gateway.</string>
+    <string name="pairing_rejected">Pairing Rejected</string>
+    <string name="pairing_rejected_desc">The pairing request was rejected. Please try again.</string>
+    <string name="pairing_failed">Pairing Failed</string>
+    <string name="pairing_waiting_desc">Please approve this device on your Gateway CLI to continue.</string>
+    <string name="pairing_rejected_desc">The pairing request was rejected. Please try again.</string>
+    <string name="pairing_code">Pairing Code</string>
+    <string name="pairing_run_command">Run this command on your Gateway:</string>
+    <string name="pairing_retry">Retry Pairing</string>
+    <string name="pairing_waiting_approval">Waiting for approval…</string>
+    <string name="pairing_redirecting">Redirecting…</string>
+    
+    <!-- Chat Screen -->
+    <string name="chat_title">Chat</string>
+    <string name="chat_back">Back</string>
+    <string name="chat_stop">Stop</string>
+    <string name="chat_load_more">Load more</string>
+    <string name="chat_thinking">Thinking…</string>
+    <string name="chat_input_hint">Type a message…</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_streaming">streaming…</string>
+    
+    <!-- Approval Screen -->
+    <string name="approvals_title">Approvals</string>
+    <string name="approvals_no_pending">No pending approvals</string>
+    <string name="approvals_required">Approval Required</string>
+    <string name="approvals_risk">Risk:</string>
+    <string name="approvals_allow">Allow</string>
+    <string name="approvals_always">Always</string>
+    <string name="approvals_deny">Deny</string>
+    
+    <!-- Session List Screen -->
+    <string name="sessions_title">Sessions</string>
+    <string name="sessions_new">New session</string>
+    <string name="sessions_no_sessions">No sessions yet</string>
+    <string name="sessions_create">Create session</string>
+    <string name="sessions_messages">messages</string>
+    <string name="sessions_just_now">Just now</string>
+    <string name="sessions_min_ago">min ago</string>
+    <string name="sessions_delete_title">Delete session?</string>
+    <string name="sessions_delete_desc">This action cannot be undone.</string>
+    <string name="sessions_delete">Delete</string>
+    <string name="sessions_label_optional">Label (optional)</string>
+    
+    <!-- Channel List Screen -->
+    <string name="channels_title">Channels</string>
+    <string name="channels_no_channels">No channels configured</string>
+    <string name="channels_show_qr">Show QR</string>
+    <string name="channels_scan_qr">Scan QR Code</string>
+    <string name="channels_scan_desc">Scan this QR code with your messaging app:</string>
+    <string name="channels_done">Done</string>
+    <string name="channels_disconnect">Disconnect</string>
+    <string name="channels_reconnect">Reconnect</string>
 </resources>

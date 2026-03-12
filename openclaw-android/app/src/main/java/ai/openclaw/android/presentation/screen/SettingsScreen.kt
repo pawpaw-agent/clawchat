@@ -1,5 +1,6 @@
 package ai.openclaw.android.presentation.screen
 
+import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.GatewayConfig
 import ai.openclaw.android.presentation.theme.ThemeMode
 import ai.openclaw.android.presentation.viewmodel.SettingsViewModel
@@ -13,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -29,10 +31,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.chat_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -49,7 +51,7 @@ fun SettingsScreen(
         ) {
             // Theme Section
             item {
-                SettingsSectionHeader(title = "Appearance")
+                SettingsSectionHeader(title = stringResource(R.string.settings_appearance))
             }
             
             item {
@@ -59,15 +61,22 @@ fun SettingsScreen(
                 )
             }
             
+            // Language Section
+            item {
+                LanguageSelector(
+                    onLanguageSelected = { /* Will be implemented */ }
+                )
+            }
+            
             // Notifications Section
             item {
-                SettingsSectionHeader(title = "Notifications")
+                SettingsSectionHeader(title = stringResource(R.string.settings_notifications))
             }
             
             item {
                 SettingsSwitch(
-                    title = "Enable Notifications",
-                    subtitle = "Receive alerts for new messages and approvals",
+                    title = stringResource(R.string.settings_notifications_enabled),
+                    subtitle = stringResource(R.string.settings_notifications_desc),
                     checked = uiState.notificationsEnabled,
                     onCheckedChange = { viewModel.setNotificationsEnabled(it) }
                 )
@@ -75,13 +84,13 @@ fun SettingsScreen(
             
             // Connection Section
             item {
-                SettingsSectionHeader(title = "Connection")
+                SettingsSectionHeader(title = stringResource(R.string.settings_connection))
             }
             
             item {
                 SettingsSwitch(
-                    title = "Auto Reconnect",
-                    subtitle = "Automatically reconnect when connection is lost",
+                    title = stringResource(R.string.settings_auto_reconnect),
+                    subtitle = stringResource(R.string.settings_auto_reconnect_desc),
                     checked = uiState.autoReconnect,
                     onCheckedChange = { viewModel.setAutoReconnect(it) }
                 )
@@ -97,12 +106,12 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Gateway Configurations",
+                        text = stringResource(R.string.settings_gateways),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     IconButton(onClick = { showAddGatewayDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Gateway")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.settings_add_gateway))
                     }
                 }
             }
@@ -139,7 +148,7 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "No gateway configurations yet. Tap + to add one.",
+                                text = stringResource(R.string.settings_no_gateways),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -185,12 +194,18 @@ private fun ThemeSelector(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Theme",
+                text = stringResource(R.string.settings_theme),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
             
-            ThemeMode.values().forEach { mode ->
+            val themeLabels = listOf(
+                ThemeMode.SYSTEM to stringResource(R.string.settings_theme_system),
+                ThemeMode.LIGHT to stringResource(R.string.settings_theme_light),
+                ThemeMode.DARK to stringResource(R.string.settings_theme_dark)
+            )
+            
+            themeLabels.forEach { (mode, label) ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -208,7 +223,70 @@ private fun ThemeSelector(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
+                        text = label,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LanguageSelector(
+    onLanguageSelected: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = stringResource(R.string.settings_language),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+            
+            val languageOptions = listOf(
+                "system" to stringResource(R.string.settings_language_system),
+                "en" to stringResource(R.string.settings_language_en),
+                "zh" to stringResource(R.string.settings_language_zh)
+            )
+            
+            // Get current language from configuration
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val currentLang = remember { 
+                val config = context.resources.configuration
+                config.locales[0].language
+            }
+            
+            languageOptions.forEach { (code, label) ->
+                val isSelected = when (code) {
+                    "system" -> currentLang.isEmpty() || currentLang == "en" || currentLang == "zh"
+                    else -> currentLang == code
+                }
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = false, // Non-functional for now
+                            onClick = { onLanguageSelected(code) },
+                            role = Role.RadioButton
+                        )
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = false,
+                        onClick = null
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = label,
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
@@ -284,7 +362,7 @@ private fun GatewayConfigItem(
                         Spacer(modifier = Modifier.width(8.dp))
                         SuggestionChip(
                             onClick = {},
-                            label = { Text("Default") },
+                            label = { Text(stringResource(R.string.settings_default)) },
                             modifier = Modifier.height(24.dp)
                         )
                     }
@@ -300,7 +378,7 @@ private fun GatewayConfigItem(
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(R.string.settings_delete),
                     tint = MaterialTheme.colorScheme.error
                 )
             }
@@ -319,20 +397,20 @@ private fun AddGatewayDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Gateway") },
+        title = { Text(stringResource(R.string.settings_add_gateway)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.settings_gateway_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text("URL") },
+                    label = { Text(stringResource(R.string.settings_gateway_url)) },
                     placeholder = { Text("ws://192.168.1.100:3000/ws") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -340,7 +418,7 @@ private fun AddGatewayDialog(
                 OutlinedTextField(
                     value = token,
                     onValueChange = { token = it },
-                    label = { Text("Token (Optional)") },
+                    label = { Text(stringResource(R.string.settings_gateway_token)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -355,12 +433,12 @@ private fun AddGatewayDialog(
                 },
                 enabled = name.isNotBlank() && url.isNotBlank()
             ) {
-                Text("Add")
+                Text(stringResource(R.string.settings_gateway_add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.settings_cancel))
             }
         }
     )

@@ -1,5 +1,6 @@
 package ai.openclaw.android.presentation.screen
 
+import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.Session
 import ai.openclaw.android.presentation.viewmodel.SessionListViewModel
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -29,10 +31,10 @@ fun SessionListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Sessions") },
+                title = { Text(stringResource(R.string.sessions_title)) },
                 actions = {
                     IconButton(onClick = { viewModel.syncSessions() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.dashboard_refresh))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -45,7 +47,7 @@ fun SessionListScreen(
                 onClick = { showCreateDialog = true },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "New session")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.sessions_new))
             }
         }
     ) { padding ->
@@ -71,7 +73,7 @@ fun SessionListScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        "No sessions yet",
+                        stringResource(R.string.sessions_no_sessions),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -79,7 +81,7 @@ fun SessionListScreen(
                     Button(onClick = { showCreateDialog = true }) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Create session")
+                        Text(stringResource(R.string.sessions_create))
                     }
                 }
             } else {
@@ -173,7 +175,7 @@ private fun SessionItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${session.messageCount} messages",
+                        text = "${session.messageCount} ${stringResource(R.string.sessions_messages)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -209,8 +211,8 @@ private fun SessionItem(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete session?") },
-            text = { Text("This action cannot be undone.") },
+            title = { Text(stringResource(R.string.sessions_delete_title)) },
+            text = { Text(stringResource(R.string.sessions_delete_desc)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -221,12 +223,12 @@ private fun SessionItem(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.sessions_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.settings_cancel))
                 }
             }
         )
@@ -242,24 +244,24 @@ private fun CreateSessionDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New Session") },
+        title = { Text(stringResource(R.string.sessions_new)) },
         text = {
             OutlinedTextField(
                 value = label,
                 onValueChange = { label = it },
-                label = { Text("Label (optional)") },
+                label = { Text(stringResource(R.string.sessions_label_optional)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
         },
         confirmButton = {
             TextButton(onClick = { onCreate(label.ifEmpty { null }) }) {
-                Text("Create")
+                Text(stringResource(R.string.settings_gateway_add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.settings_cancel))
             }
         }
     )

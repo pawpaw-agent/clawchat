@@ -1,5 +1,6 @@
 package ai.openclaw.android.presentation.screen
 
+import ai.openclaw.android.R
 import ai.openclaw.android.data.repository.PairingState
 import ai.openclaw.android.presentation.viewmodel.PairingViewModel
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,10 +42,10 @@ fun PairingScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Device Pairing") },
+                title = { Text(stringResource(R.string.pairing_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.chat_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -101,10 +103,10 @@ fun PairingScreen(
             // 标题
             Text(
                 text = when (uiState.pairingState) {
-                    is PairingState.Waiting -> "Waiting for Approval"
-                    is PairingState.Approved -> "Device Paired!"
-                    is PairingState.Rejected -> "Pairing Rejected"
-                    is PairingState.Error -> "Pairing Failed"
+                    is PairingState.Waiting -> stringResource(R.string.pairing_waiting)
+                    is PairingState.Approved -> stringResource(R.string.pairing_paired)
+                    is PairingState.Rejected -> stringResource(R.string.pairing_rejected)
+                    is PairingState.Error -> stringResource(R.string.pairing_failed)
                 },
                 style = MaterialTheme.typography.headlineMedium
             )
@@ -112,9 +114,9 @@ fun PairingScreen(
             // 说明文字
             Text(
                 text = when (uiState.pairingState) {
-                    is PairingState.Waiting -> "Please approve this device on your Gateway CLI to continue."
-                    is PairingState.Approved -> "Your device has been successfully paired with the Gateway."
-                    is PairingState.Rejected -> "The pairing request was rejected. Please try again."
+                    is PairingState.Waiting -> stringResource(R.string.pairing_waiting_desc)
+                    is PairingState.Approved -> stringResource(R.string.pairing_paired_desc)
+                    is PairingState.Rejected -> stringResource(R.string.pairing_rejected_desc)
                     is PairingState.Error -> (uiState.pairingState as PairingState.Error).message
                 },
                 style = MaterialTheme.typography.bodyLarge,
@@ -136,7 +138,7 @@ fun PairingScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Pairing Code",
+                            text = stringResource(R.string.pairing_code),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                         )
@@ -162,7 +164,7 @@ fun PairingScreen(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "Run this command on your Gateway:",
+                            text = stringResource(R.string.pairing_run_command),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -195,7 +197,7 @@ fun PairingScreen(
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Retry Pairing")
+                    Text(stringResource(R.string.pairing_retry))
                 }
             }
 
@@ -210,7 +212,7 @@ fun PairingScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Waiting for approval...",
+                        text = stringResource(R.string.pairing_waiting_approval),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
@@ -224,7 +226,7 @@ fun PairingScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    text = "Redirecting...",
+                    text = stringResource(R.string.pairing_redirecting),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )

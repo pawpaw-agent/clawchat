@@ -1,5 +1,6 @@
 package ai.openclaw.android.presentation.screen
 
+import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.Message
 import ai.openclaw.android.domain.model.MessageRole
 import ai.openclaw.android.presentation.viewmodel.ChatViewModel
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -46,10 +48,10 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chat") },
+                title = { Text(stringResource(R.string.chat_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.chat_back))
                     }
                 },
                 actions = {
@@ -57,7 +59,7 @@ fun ChatScreen(
                         IconButton(onClick = { viewModel.abort() }) {
                             Icon(
                                 Icons.Default.Stop,
-                                contentDescription = "Stop",
+                                contentDescription = stringResource(R.string.chat_stop),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -99,7 +101,7 @@ fun ChatScreen(
                                         strokeWidth = 2.dp
                                     )
                                 } else {
-                                    Text("Load more")
+                                    Text(stringResource(R.string.chat_load_more))
                                 }
                             }
                         }
@@ -134,7 +136,7 @@ fun ChatScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        "Thinking...",
+                                        stringResource(R.string.chat_thinking),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
@@ -262,7 +264,7 @@ private fun MessageInput(
                 value = text,
                 onValueChange = onTextChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Type a message...") },
+                placeholder = { Text(stringResource(R.string.chat_input_hint)) },
                 maxLines = 4,
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = Color.Transparent,
@@ -289,7 +291,7 @@ private fun MessageInput(
                 } else {
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send"
+                        contentDescription = stringResource(R.string.chat_send)
                     )
                 }
             }

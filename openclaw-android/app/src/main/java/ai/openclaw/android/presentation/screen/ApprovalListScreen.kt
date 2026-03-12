@@ -1,5 +1,6 @@
 package ai.openclaw.android.presentation.screen
 
+import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.ApprovalAction
 import ai.openclaw.android.domain.model.ApprovalRequest
 import ai.openclaw.android.presentation.viewmodel.ApprovalListViewModel
@@ -12,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -27,11 +29,11 @@ fun ApprovalListScreen(
         topBar = {
             TopAppBar(
                 title = { 
-                    Text("Approvals ${if (uiState.approvals.isNotEmpty()) "(${uiState.approvals.size})" else ""}")
+                    Text(stringResource(R.string.approvals_title) + if (uiState.approvals.isNotEmpty()) " (${uiState.approvals.size})" else "")
                 },
                 actions = {
                     IconButton(onClick = { viewModel.syncApprovals() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.dashboard_refresh))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -59,7 +61,7 @@ fun ApprovalListScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No pending approvals", color = MaterialTheme.colorScheme.outline)
+                    Text(stringResource(R.string.approvals_no_pending), color = MaterialTheme.colorScheme.outline)
                 }
             } else {
                 LazyColumn(
@@ -122,7 +124,7 @@ private fun ApprovalItem(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Approval Required",
+                    text = stringResource(R.string.approvals_required),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -170,7 +172,7 @@ private fun ApprovalItem(
                 Spacer(modifier = Modifier.height(4.dp))
                 SuggestionChip(
                     onClick = {},
-                    label = { Text("Risk: $risk") },
+                    label = { Text(stringResource(R.string.approvals_risk) + " $risk") },
                     colors = SuggestionChipDefaults.suggestionChipColors(
                         containerColor = when (risk.lowercase()) {
                             "high" -> MaterialTheme.colorScheme.errorContainer
@@ -203,14 +205,14 @@ private fun ApprovalItem(
                             containerColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("Allow")
+                        Text(stringResource(R.string.approvals_allow))
                     }
                     
                     OutlinedButton(
                         onClick = onApproveAlways,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Always")
+                        Text(stringResource(R.string.approvals_always))
                     }
                     
                     Button(
@@ -220,7 +222,7 @@ private fun ApprovalItem(
                             containerColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("Deny")
+                        Text(stringResource(R.string.approvals_deny))
                     }
                 }
             }

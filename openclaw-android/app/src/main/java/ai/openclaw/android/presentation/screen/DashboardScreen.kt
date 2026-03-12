@@ -1,5 +1,6 @@
 package ai.openclaw.android.presentation.screen
 
+import ai.openclaw.android.R
 import ai.openclaw.android.core.network.ConnectionState
 import ai.openclaw.android.core.network.GatewayClient
 import ai.openclaw.android.data.repository.ApprovalRepository
@@ -15,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -111,10 +113,10 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Management") },
+                title = { Text(stringResource(R.string.dashboard_title)) },
                 actions = {
                     IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.dashboard_refresh))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -132,9 +134,18 @@ fun DashboardScreen(
         ) {
             // Gateway Status Card
             item {
+                val statusText = when {
+                    uiState.gatewayStatus == "Connected" -> stringResource(R.string.dashboard_connected)
+                    uiState.gatewayStatus == "Disconnected" -> stringResource(R.string.dashboard_disconnected)
+                    uiState.gatewayStatus == "Connecting..." -> stringResource(R.string.dashboard_connecting)
+                    uiState.gatewayStatus == "Authenticating..." -> stringResource(R.string.dashboard_authenticating)
+                    uiState.gatewayStatus.startsWith("Error") -> stringResource(R.string.dashboard_error) + uiState.gatewayStatus.removePrefix("Error")
+                    else -> uiState.gatewayStatus
+                }
+                
                 StatusCard(
-                    title = "Gateway Status",
-                    value = uiState.gatewayStatus,
+                    title = stringResource(R.string.dashboard_gateway_status),
+                    value = statusText,
                     icon = Icons.Default.Cloud,
                     color = when {
                         uiState.gatewayStatus == "Connected" -> MaterialTheme.colorScheme.primary
@@ -147,8 +158,8 @@ fun DashboardScreen(
             // Channels Summary Card
             item {
                 SummaryCard(
-                    title = "Channels",
-                    value = "${uiState.onlineChannels}/${uiState.totalChannels} online",
+                    title = stringResource(R.string.dashboard_channels),
+                    value = "${uiState.onlineChannels}/${uiState.totalChannels} ${stringResource(R.string.dashboard_channels_online)}",
                     icon = Icons.Default.Link,
                     onClick = onNavigateToChannels
                 )
@@ -157,8 +168,8 @@ fun DashboardScreen(
             // Approvals Card
             item {
                 SummaryCard(
-                    title = "Pending Approvals",
-                    value = if (uiState.pendingApprovals > 0) "${uiState.pendingApprovals} pending" else "No pending",
+                    title = stringResource(R.string.dashboard_pending_approvals),
+                    value = if (uiState.pendingApprovals > 0) "${uiState.pendingApprovals}" else stringResource(R.string.dashboard_no_pending),
                     icon = Icons.Default.CheckCircle,
                     badge = if (uiState.pendingApprovals > 0) uiState.pendingApprovals else null,
                     onClick = onNavigateToApprovals
@@ -168,7 +179,7 @@ fun DashboardScreen(
             // Quick Actions
             item {
                 Text(
-                    text = "Quick Actions",
+                    text = stringResource(R.string.dashboard_quick_actions),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -181,13 +192,13 @@ fun DashboardScreen(
                 ) {
                     QuickActionButton(
                         icon = Icons.Default.Sync,
-                        label = "Sync All",
+                        label = stringResource(R.string.dashboard_sync_all),
                         onClick = { viewModel.refresh() },
                         modifier = Modifier.weight(1f)
                     )
                     QuickActionButton(
                         icon = Icons.Default.Settings,
-                        label = "Settings",
+                        label = stringResource(R.string.nav_settings),
                         onClick = { },
                         modifier = Modifier.weight(1f)
                     )

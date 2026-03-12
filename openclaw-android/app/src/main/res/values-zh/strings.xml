@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenClaw</string>
+    
+    <!-- Bottom Navigation -->
+    <string name="nav_sessions">会话</string>
+    <string name="nav_manage">管理</string>
+    <string name="nav_settings">设置</string>
+    
+    <!-- Settings Screen -->
+    <string name="settings_title">设置</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_zh">中文</string>
+    <string name="settings_notifications">通知</string>
+    <string name="settings_notifications_enabled">启用通知</string>
+    <string name="settings_notifications_desc">接收新消息和审批提醒</string>
+    <string name="settings_connection">连接</string>
+    <string name="settings_auto_reconnect">自动重连</string>
+    <string name="settings_auto_reconnect_desc">连接断开时自动重连</string>
+    <string name="settings_gateways">网关配置</string>
+    <string name="settings_add_gateway">添加网关</string>
+    <string name="settings_no_gateways">暂无网关配置，点击 + 添加</string>
+    <string name="settings_gateway_name">名称</string>
+    <string name="settings_gateway_url">地址</string>
+    <string name="settings_gateway_token">令牌（可选）</string>
+    <string name="settings_gateway_add">添加</string>
+    <string name="settings_cancel">取消</string>
+    <string name="settings_default">默认</string>
+    <string name="settings_delete">删除</string>
+    
+    <!-- Dashboard Screen -->
+    <string name="dashboard_title">管理</string>
+    <string name="dashboard_refresh">刷新</string>
+    <string name="dashboard_gateway_status">网关状态</string>
+    <string name="dashboard_connected">已连接</string>
+    <string name="dashboard_disconnected">已断开</string>
+    <string name="dashboard_connecting">连接中…</string>
+    <string name="dashboard_authenticating">认证中…</string>
+    <string name="dashboard_error">错误</string>
+    <string name="dashboard_channels">渠道</string>
+    <string name="dashboard_channels_online">在线</string>
+    <string name="dashboard_pending_approvals">待审批</string>
+    <string name="dashboard_no_pending">无待处理</string>
+    <string name="dashboard_quick_actions">快捷操作</string>
+    <string name="dashboard_sync_all">全部同步</string>
+    
+    <!-- Connect Screen -->
+    <string name="connect_title">OpenClaw</string>
+    <string name="connect_to_gateway">连接网关</string>
+    <string name="connect_gateway_url">网关地址</string>
+    <string name="connect_token">令牌（可选）</string>
+    <string name="connect_token_hint">留空则进入配对流程</string>
+    <string name="connect_button">连接</string>
+    <string name="connect_connecting">连接中…</string>
+    <string name="connect_disconnect">断开连接</string>
+    <string name="connect_status_connected">已连接</string>
+    <string name="connect_status_disconnected">已断开</string>
+    <string name="connect_status_ready">就绪</string>
+    <string name="connect_status_error">错误</string>
+    <string name="connect_help">输入网关地址进行连接。如未提供令牌，需要配对设备。</string>
+    
+    <!-- Pairing Screen -->
+    <string name="pairing_title">设备配对</string>
+    <string name="pairing_waiting">等待审批</string>
+    <string name="pairing_paired">配对成功！</string>
+    <string name="pairing_rejected">配对被拒绝</string>
+    <string name="pairing_failed">配对失败</string>
+    <string name="pairing_waiting_desc">请在网关 CLI 上审批此设备以继续。</string>
+    <string name="pairing_rejected_desc">配对请求被拒绝，请重试。</string>
+    <string name="pairing_code">配对码</string>
+    <string name="pairing_run_command">在网关上运行此命令：</string>
+    <string name="pairing_retry">重试配对</string>
+    <string name="pairing_waiting_approval">等待审批中…</string>
+    <string name="pairing_redirecting">正在跳转…</string>
+    
+    <!-- Chat Screen -->
+    <string name="chat_title">聊天</string>
+    <string name="chat_back">返回</string>
+    <string name="chat_stop">停止</string>
+    <string name="chat_load_more">加载更多</string>
+    <string name="chat_thinking">思考中…</string>
+    <string name="chat_input_hint">输入消息…</string>
+    <string name="chat_send">发送</string>
+    <string name="chat_streaming">输出中…</string>
+    
+    <!-- Approval Screen -->
+    <string name="approvals_title">审批</string>
+    <string name="approvals_no_pending">暂无待审批</string>
+    <string name="approvals_required">需要审批</string>
+    <string name="approvals_risk">风险：</string>
+    <string name="approvals_allow">允许</string>
+    <string name="approvals_always">始终允许</string>
+    <string name="approvals_deny">拒绝</string>
+    
+    <!-- Session List Screen -->
+    <string name="sessions_title">会话</string>
+    <string name="sessions_new">新会话</string>
+    <string name="sessions_no_sessions">暂无会话</string>
+    <string name="sessions_create">创建会话</string>
+    <string name="sessions_messages">条消息</string>
+    <string name="sessions_just_now">刚刚</string>
+    <string name="sessions_min_ago">分钟前</string>
+    <string name="sessions_delete_title">删除会话？</string>
+    <string name="sessions_delete_desc">此操作无法撤销。</string>
+    <string name="sessions_delete">删除</string>
+    <string name="sessions_label_optional">标签（可选）</string>
+    
+    <!-- Channel List Screen -->
+    <string name="channels_title">渠道</string>
+    <string name="channels_no_channels">暂无渠道配置</string>
+    <string name="channels_show_qr">显示二维码</string>
+    <string name="channels_scan_qr">扫描二维码</string>
+    <string name="channels_scan_desc">使用消息应用扫描此二维码：</string>
+    <string name="channels_done">完成</string>
+    <string name="channels_disconnect">断开</string>
+    <string name="channels_reconnect">重连</string>
+</resources>
