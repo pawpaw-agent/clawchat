@@ -200,7 +200,7 @@ private fun SessionItem(
             IconButton(onClick = { showDeleteConfirm = true }) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(R.string.sessions_delete),
                     tint = MaterialTheme.colorScheme.error
                 )
             }
@@ -267,13 +267,14 @@ private fun CreateSessionDialog(
     )
 }
 
+@Composable
 private fun formatTimestamp(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     
     return when {
-        diff < 60000 -> "Just now"
-        diff < 3600000 -> "${diff / 60000} min ago"
+        diff < 60000 -> stringResource(R.string.sessions_just_now)
+        diff < 3600000 -> "${diff / 60000} ${stringResource(R.string.sessions_min_ago)}"
         diff < 86400000 -> SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
         else -> SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(timestamp))
     }

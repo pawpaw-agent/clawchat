@@ -5,7 +5,7 @@
 
 DEFAULT_GRADLE_VERSION="8.4"
 GRADLE_VERSION="${GRADLE_VERSION:-$DEFAULT_GRADLE_VERSION}"
-GRADLE_HOME="$HOME/.gradle/wrapper/dists/gradle-$GRADLE_VERSION-bin"
+GRADLE_HOME="$HOME/.gradle/wrapper/dists/gradle-$GRADLE_VERSION-bin/gradle-$GRADLE_VERSION"
 GRADLE_URL="https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip"
 
 # Download Gradle if not present

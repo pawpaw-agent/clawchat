@@ -232,7 +232,7 @@ private fun MessageBubble(message: Message) {
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            "streaming...",
+                            stringResource(R.string.chat_streaming),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )

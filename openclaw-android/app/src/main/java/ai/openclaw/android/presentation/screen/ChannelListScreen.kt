@@ -128,7 +128,7 @@ fun ChannelListScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "QR Code",
+                                stringResource(R.string.channels_qr_placeholder),
                                 style = MaterialTheme.typography.labelLarge
                             )
                         }

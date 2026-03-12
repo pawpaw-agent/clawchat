@@ -1,5 +1,6 @@
 package ai.openclaw.android.presentation.screen
 
+import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.NodeStatus
 import ai.openclaw.android.presentation.viewmodel.NodeListViewModel
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -25,10 +27,10 @@ fun NodeListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nodes") },
+                title = { Text(stringResource(R.string.nodes_title)) },
                 actions = {
                     IconButton(onClick = { viewModel.syncNodes() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.nodes_refresh))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -56,7 +58,7 @@ fun NodeListScreen(
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No nodes available", color = MaterialTheme.colorScheme.outline)
+                    Text(stringResource(R.string.nodes_no_nodes), color = MaterialTheme.colorScheme.outline)
                 }
             } else {
                 LazyColumn(
@@ -110,7 +112,7 @@ private fun NodeItem(node: NodeStatus) {
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = if (node.online) "Online" else "Offline",
+                        text = if (node.online) stringResource(R.string.nodes_online) else stringResource(R.string.nodes_offline),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (node.online) Color(0xFF4CAF50) else MaterialTheme.colorScheme.outline
                     )
@@ -150,7 +152,7 @@ private fun NodeItem(node: NodeStatus) {
             node.model?.let { model ->
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Model: $model",
+                    text = "${stringResource(R.string.nodes_model)} $model",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
                 )

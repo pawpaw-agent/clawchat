@@ -170,7 +170,7 @@ fun PairingScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "openclaw device approve ${uiState.pairingCode}",
+                            text = String.format(stringResource(R.string.pairing_cli_command_template), uiState.pairingCode),
                             style = MaterialTheme.typography.bodyMedium,
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.primary
@@ -182,7 +182,7 @@ fun PairingScreen(
             // Request ID
             if (uiState.requestId.isNotEmpty()) {
                 Text(
-                    text = "Request ID: ${uiState.requestId.take(8)}...",
+                    text = "${stringResource(R.string.pairing_request_id)} ${uiState.requestId.take(8)}...",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )

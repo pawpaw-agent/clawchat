@@ -1,5 +1,6 @@
 package ai.openclaw.android.presentation.screen
 
+import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.ConfigItem
 import ai.openclaw.android.domain.model.ConfigType
 import ai.openclaw.android.presentation.viewmodel.ConfigViewModel
@@ -12,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -29,10 +31,10 @@ fun ConfigScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Configuration") },
+                title = { Text(stringResource(R.string.config_title)) },
                 actions = {
                     IconButton(onClick = { viewModel.syncConfig() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.config_refresh))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -60,7 +62,7 @@ fun ConfigScreen(
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No configuration available", color = MaterialTheme.colorScheme.outline)
+                    Text(stringResource(R.string.config_no_config), color = MaterialTheme.colorScheme.outline)
                 }
             } else {
                 LazyColumn(
@@ -147,11 +149,11 @@ private fun ConfigItemView(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onCancel) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.config_cancel))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = onSave) {
-                        Text("Save")
+                        Text(stringResource(R.string.config_save))
                     }
                 }
             } else {
@@ -170,7 +172,7 @@ private fun ConfigItemView(
                         IconButton(onClick = onStartEdit) {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = "Edit",
+                                contentDescription = stringResource(R.string.config_edit),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }

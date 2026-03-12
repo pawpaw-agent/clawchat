@@ -123,4 +123,34 @@
     <string name="channels_done">Done</string>
     <string name="channels_disconnect">Disconnect</string>
     <string name="channels_reconnect">Reconnect</string>
+    
+    <!-- NodeList Screen -->
+    <string name="nodes_title">Nodes</string>
+    <string name="nodes_refresh">Refresh</string>
+    <string name="nodes_no_nodes">No nodes available</string>
+    <string name="nodes_online">Online</string>
+    <string name="nodes_offline">Offline</string>
+    <string name="nodes_model">Model:</string>
+    
+    <!-- Config Screen -->
+    <string name="config_title">Configuration</string>
+    <string name="config_refresh">Refresh</string>
+    <string name="config_no_config">No configuration available</string>
+    <string name="config_cancel">Cancel</string>
+    <string name="config_save">Save</string>
+    <string name="config_edit">Edit</string>
+    
+    <!-- Connect Screen -->
+    <string name="connect_hide_token">Hide token</string>
+    <string name="connect_show_token">Show token</string>
+    <string name="connect_dismiss">Dismiss</string>
+    <string name="connect_protocol">Protocol:</string>
+    <string name="connect_device_token_received">Device token received</string>
+    
+    <!-- Pairing Screen -->
+    <string name="pairing_request_id">Request ID:</string>
+    <string name="pairing_cli_command_template">openclaw device approve %s</string>
+    
+    <!-- Channel List Screen -->
+    <string name="channels_qr_placeholder">QR Code</string>
 </resources>

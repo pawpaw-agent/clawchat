@@ -46,7 +46,7 @@ fun ConnectScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("OpenClaw") },
+                title = { Text(stringResource(R.string.connect_title)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -72,7 +72,7 @@ fun ConnectScreen(
             )
 
             Text(
-                text = "Connect to Gateway",
+                text = stringResource(R.string.connect_to_gateway),
                 style = MaterialTheme.typography.headlineMedium
             )
 
@@ -88,7 +88,7 @@ fun ConnectScreen(
             OutlinedTextField(
                 value = uiState.gatewayUrl,
                 onValueChange = { viewModel.updateGatewayUrl(it) },
-                label = { Text("Gateway URL") },
+                label = { Text(stringResource(R.string.connect_gateway_url)) },
                 placeholder = { Text("ws://192.168.1.100:3000/ws") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -104,8 +104,8 @@ fun ConnectScreen(
             OutlinedTextField(
                 value = uiState.token,
                 onValueChange = { viewModel.updateToken(it) },
-                label = { Text("Token (Optional)") },
-                placeholder = { Text("Leave empty for pairing flow") },
+                label = { Text(stringResource(R.string.connect_token)) },
+                placeholder = { Text(stringResource(R.string.connect_token_hint)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !uiState.isConnecting && !uiState.isConnected,
@@ -117,7 +117,7 @@ fun ConnectScreen(
                     IconButton(onClick = { tokenVisible = !tokenVisible }) {
                         Icon(
                             imageVector = if (tokenVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = if (tokenVisible) "Hide token" else "Show token"
+                            contentDescription = stringResource(if (tokenVisible) R.string.connect_hide_token else R.string.connect_show_token)
                         )
                     }
                 }
@@ -150,7 +150,7 @@ fun ConnectScreen(
                         IconButton(onClick = { viewModel.clearError() }) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "Dismiss",
+                                contentDescription = stringResource(R.string.connect_dismiss),
                                 tint = MaterialTheme.colorScheme.onErrorContainer
                             )
                         }
@@ -169,7 +169,7 @@ fun ConnectScreen(
                 ) {
                     Icon(Icons.Default.LinkOff, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Disconnect")
+                    Text(stringResource(R.string.connect_disconnect))
                 }
             } else {
                 Button(
@@ -184,11 +184,11 @@ fun ConnectScreen(
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Connecting...")
+                        Text(stringResource(R.string.connect_connecting))
                     } else {
                         Icon(Icons.Default.Link, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Connect")
+                        Text(stringResource(R.string.connect_button))
                     }
                 }
             }
@@ -213,20 +213,20 @@ fun ConnectScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Connected",
+                                text = stringResource(R.string.connect_status_connected),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Protocol: ${helloOk.protocol}",
+                            text = "${stringResource(R.string.connect_protocol)} ${helloOk.protocol}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         helloOk.auth?.deviceToken?.let {
                             Text(
-                                text = "Device token received",
+                                text = stringResource(R.string.connect_device_token_received),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                             )
@@ -239,8 +239,7 @@ fun ConnectScreen(
 
             // 帮助信息
             Text(
-                text = "Enter your Gateway URL to connect. " +
-                        "If no token is provided, you will need to pair the device.",
+                text = stringResource(R.string.connect_help),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -254,13 +253,13 @@ private fun ConnectionStatusCard(
     isConnected: Boolean
 ) {
     val (statusText, statusColor, icon) = when (connectionState) {
-        is ConnectionState.Disconnected -> Triple("Disconnected", MaterialTheme.colorScheme.outline, Icons.Default.CloudOff)
-        is ConnectionState.Connecting -> Triple("Connecting...", MaterialTheme.colorScheme.tertiary, Icons.Default.CloudSync)
-        is ConnectionState.ChallengeReceived -> Triple("Authenticating...", MaterialTheme.colorScheme.tertiary, Icons.Default.Key)
-        is ConnectionState.Authenticating -> Triple("Authenticating...", MaterialTheme.colorScheme.tertiary, Icons.Default.Key)
-        is ConnectionState.Connected -> Triple("Connected", MaterialTheme.colorScheme.primary, Icons.Default.CloudDone)
-        is ConnectionState.Error -> Triple("Error", MaterialTheme.colorScheme.error, Icons.Default.Error)
-        null -> Triple("Ready", MaterialTheme.colorScheme.outline, Icons.Default.Cloud)
+        is ConnectionState.Disconnected -> Triple(stringResource(R.string.connect_status_disconnected), MaterialTheme.colorScheme.outline, Icons.Default.CloudOff)
+        is ConnectionState.Connecting -> Triple(stringResource(R.string.connect_connecting), MaterialTheme.colorScheme.tertiary, Icons.Default.CloudSync)
+        is ConnectionState.ChallengeReceived -> Triple(stringResource(R.string.dashboard_authenticating), MaterialTheme.colorScheme.tertiary, Icons.Default.Key)
+        is ConnectionState.Authenticating -> Triple(stringResource(R.string.dashboard_authenticating), MaterialTheme.colorScheme.tertiary, Icons.Default.Key)
+        is ConnectionState.Connected -> Triple(stringResource(R.string.connect_status_connected), MaterialTheme.colorScheme.primary, Icons.Default.CloudDone)
+        is ConnectionState.Error -> Triple(stringResource(R.string.connect_status_error), MaterialTheme.colorScheme.error, Icons.Default.Error)
+        null -> Triple(stringResource(R.string.connect_status_ready), MaterialTheme.colorScheme.outline, Icons.Default.Cloud)
     }
 
     Card(

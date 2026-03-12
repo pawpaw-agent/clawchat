@@ -121,4 +121,34 @@
     <string name="channels_done">完成</string>
     <string name="channels_disconnect">断开</string>
     <string name="channels_reconnect">重连</string>
+    
+    <!-- NodeList Screen -->
+    <string name="nodes_title">节点</string>
+    <string name="nodes_refresh">刷新</string>
+    <string name="nodes_no_nodes">暂无节点</string>
+    <string name="nodes_online">在线</string>
+    <string name="nodes_offline">离线</string>
+    <string name="nodes_model">模型：</string>
+    
+    <!-- Config Screen -->
+    <string name="config_title">配置</string>
+    <string name="config_refresh">刷新</string>
+    <string name="config_no_config">暂无配置</string>
+    <string name="config_cancel">取消</string>
+    <string name="config_save">保存</string>
+    <string name="config_edit">编辑</string>
+    
+    <!-- Connect Screen -->
+    <string name="connect_hide_token">隐藏令牌</string>
+    <string name="connect_show_token">显示令牌</string>
+    <string name="connect_dismiss">关闭</string>
+    <string name="connect_protocol">协议：</string>
+    <string name="connect_device_token_received">已接收设备令牌</string>
+    
+    <!-- Pairing Screen -->
+    <string name="pairing_request_id">请求 ID：</string>
+    <string name="pairing_cli_command_template">openclaw device approve %s</string>
+    
+    <!-- Channel List Screen -->
+    <string name="channels_qr_placeholder">二维码</string>
 </resources>
