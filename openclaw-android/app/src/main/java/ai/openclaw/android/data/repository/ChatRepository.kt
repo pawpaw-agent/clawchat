@@ -137,13 +137,10 @@ class ChatRepository @Inject constructor(
             val messagesArray = response["messages"]?.jsonArray
             val messages = messagesArray?.mapNotNull { element ->
                 val obj = element as? JsonObject ?: return@mapNotNull null
-                val content = obj["content"]
-                val contentStr = when (content) {
-                    is JsonPrimitive -> content.content
-                    is JsonObject -> content.toString()
-                    is JsonArray -> content.toString()
-                    else -> ""
-                }
+                
+                // 提取内容：支持 text 字段和 content 字段
+                val contentStr = extractMessageContent(obj)
+                
                 Message(
                     id = obj["id"]?.jsonPrimitive?.content ?: UUID.randomUUID().toString(),
                     sessionKey = actualSessionKey,
@@ -162,6 +159,53 @@ class ChatRepository @Inject constructor(
             messageDao.insertMessages(messages.map { it.toEntity() })
             
             messages
+        }
+    }
+    
+    /**
+     * 从消息对象中提取文本内容
+     * 支持格式：
+     * 1. text 字段：直接使用
+     * 2. content 字符串：直接使用
+     * 3. content 数组：提取 type="text" 的 text 字段
+     */
+    private fun extractMessageContent(obj: JsonObject): String {
+        // 优先检查 text 字段
+        val textField = obj["text"]?.jsonPrimitive?.content
+        if (!textField.isNullOrBlank()) {
+            return textField
+        }
+        
+        val content = obj["content"] ?: return ""
+        
+        return when (content) {
+            is JsonPrimitive -> content.content
+            is JsonArray -> {
+                // 从 content blocks 数组中提取文本
+                val textParts = content.mapNotNull { block ->
+                    val blockObj = block as? JsonObject ?: return@mapNotNull null
+                    when (blockObj["type"]?.jsonPrimitive?.content) {
+                        "text" -> blockObj["text"]?.jsonPrimitive?.content
+                        "thinking" -> null // 暂时跳过 thinking blocks
+                        else -> null
+                    }
+                }.filter { !it.isNullOrBlank() }
+                
+                // 如果没有找到 text blocks，尝试其他方式
+                if (textParts.isEmpty()) {
+                    // 尝试提取 thinking 内容作为备用
+                    content.mapNotNull { block ->
+                        val blockObj = block as? JsonObject ?: return@mapNotNull null
+                        if (blockObj["type"]?.jsonPrimitive?.content == "thinking") {
+                            blockObj["thinking"]?.jsonPrimitive?.content
+                        } else null
+                    }.firstOrNull() ?: ""
+                } else {
+                    textParts.joinToString("\n\n")
+                }
+            }
+            is JsonObject -> content.toString()
+            else -> ""
         }
     }
     
