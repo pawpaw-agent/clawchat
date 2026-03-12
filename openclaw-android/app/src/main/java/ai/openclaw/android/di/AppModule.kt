@@ -74,10 +74,8 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSessionRepository(
-        sessionDao: SessionDao,
-        gatewayClient: GatewayClient,
-        json: Json
-    ): SessionRepository = SessionRepository(sessionDao, gatewayClient, json)
+        sessionDao: SessionDao
+    ): SessionRepository = SessionRepository(sessionDao)
 
     @Provides
     @Singleton
@@ -90,10 +88,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideChannelRepository(
-        gatewayClient: GatewayClient,
-        json: Json
-    ): ChannelRepository = ChannelRepository(gatewayClient, json)
+    fun provideChannelRepository(): ChannelRepository = ChannelRepository()
 
     @Provides
     @Singleton
@@ -104,10 +99,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideApprovalRepository(
-        gatewayClient: GatewayClient,
-        json: Json
-    ): ApprovalRepository = ApprovalRepository(gatewayClient, json)
+    fun provideApprovalRepository(): ApprovalRepository = ApprovalRepository()
 
     @Provides
     @Singleton
