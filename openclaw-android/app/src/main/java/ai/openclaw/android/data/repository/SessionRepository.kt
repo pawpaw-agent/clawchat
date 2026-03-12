@@ -142,7 +142,7 @@ class SessionRepository @Inject constructor(
             put("reason", "reset")
         }
         
-        return gatewayClient.request("sessions.reset", params)
+        return gatewayClient.request("sessions.reset", params).map { }
     }
 }
 

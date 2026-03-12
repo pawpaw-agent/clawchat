@@ -74,8 +74,9 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSessionRepository(
-        sessionDao: SessionDao
-    ): SessionRepository = SessionRepository(sessionDao)
+        sessionDao: SessionDao,
+        gatewayClient: GatewayClient
+    ): SessionRepository = SessionRepository(sessionDao, gatewayClient)
 
     @Provides
     @Singleton
