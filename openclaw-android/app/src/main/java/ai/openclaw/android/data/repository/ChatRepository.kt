@@ -70,8 +70,9 @@ class ChatRepository @Inject constructor(
         messageDao.insertMessage(assistantMessage)
         
         // 3. 发送到服务器
+        val actualSessionKey = if (sessionKey.isBlank()) "main" else sessionKey
         val params = buildJsonObject {
-            put("key", sessionKey)
+            put("sessionKey", actualSessionKey)
             put("messages", buildJsonArray {
                 add(buildJsonObject {
                     put("role", "user")
@@ -106,8 +107,9 @@ class ChatRepository @Inject constructor(
      * 停止生成
      */
     suspend fun abort(sessionKey: String, runId: String): Result<Unit> {
+        val actualSessionKey = if (sessionKey.isBlank()) "main" else sessionKey
         val params = buildJsonObject {
-            put("key", sessionKey)
+            put("sessionKey", actualSessionKey)
             put("runId", runId)
         }
         
@@ -121,8 +123,11 @@ class ChatRepository @Inject constructor(
      * 同步历史消息
      */
     suspend fun syncHistory(sessionKey: String, limit: Int = 50): Result<List<Message>> {
+        // 使用固定的 main session
+        val actualSessionKey = if (sessionKey.isBlank()) "main" else sessionKey
+        
         val params = buildJsonObject {
-            put("key", sessionKey)
+            put("sessionKey", actualSessionKey)
             put("limit", limit)
         }
         
@@ -132,16 +137,23 @@ class ChatRepository @Inject constructor(
             val messagesArray = response["messages"]?.jsonArray
             val messages = messagesArray?.mapNotNull { element ->
                 val obj = element as? JsonObject ?: return@mapNotNull null
+                val content = obj["content"]
+                val contentStr = when (content) {
+                    is JsonPrimitive -> content.content
+                    is JsonObject -> content.toString()
+                    is JsonArray -> content.toString()
+                    else -> ""
+                }
                 Message(
                     id = obj["id"]?.jsonPrimitive?.content ?: UUID.randomUUID().toString(),
-                    sessionKey = sessionKey,
+                    sessionKey = actualSessionKey,
                     role = when (obj["role"]?.jsonPrimitive?.content) {
                         "user" -> MessageRole.USER
                         "assistant" -> MessageRole.ASSISTANT
                         "system" -> MessageRole.SYSTEM
                         else -> MessageRole.USER
                     },
-                    content = obj["content"]?.jsonPrimitive?.content ?: "",
+                    content = contentStr,
                     timestamp = obj["timestamp"]?.jsonPrimitive?.longOrNull ?: System.currentTimeMillis()
                 )
             } ?: emptyList()
