@@ -134,7 +134,13 @@ class ChatRepository @Inject constructor(
         val result = gatewayClient.request("chat.history", params)
         
         return result.map { response ->
+            android.util.Log.d("ChatRepository", "=== syncHistory Response ===")
+            android.util.Log.d("ChatRepository", "Response keys: ${response.keys}")
+            android.util.Log.d("ChatRepository", "sessionKey: $actualSessionKey")
+            
             val messagesArray = response["messages"]?.jsonArray
+            android.util.Log.d("ChatRepository", "Messages array size: ${messagesArray?.size}")
+            
             val messages = messagesArray?.mapNotNull { element ->
                 val obj = element as? JsonObject ?: return@mapNotNull null
                 
@@ -156,6 +162,10 @@ class ChatRepository @Inject constructor(
             } ?: emptyList()
             
             // 保存到本地
+            android.util.Log.d("ChatRepository", "Saving ${messages.size} messages to database with sessionKey=$actualSessionKey")
+            messages.forEach { 
+                android.util.Log.d("ChatRepository", "  - id=${it.id}, role=${it.role}, content=${it.content.take(50)}...") 
+            }
             messageDao.insertMessages(messages.map { it.toEntity() })
             
             messages
