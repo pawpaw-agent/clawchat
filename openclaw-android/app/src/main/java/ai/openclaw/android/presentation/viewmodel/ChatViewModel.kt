@@ -73,7 +73,7 @@ class ChatViewModel @Inject constructor(
                             val eventJson = kotlinx.serialization.json.JsonObject(
                                 mapOf(
                                     "event" to kotlinx.serialization.json.JsonPrimitive(event.event),
-                                    "payload" to kotlinx.serialization.json.JsonPrimitive(event.payload)
+                                    "payload" to event.payload
                                 )
                             )
                             chatRepository.handleStreamEvent(eventJson)
