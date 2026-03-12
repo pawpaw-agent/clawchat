@@ -33,6 +33,12 @@ interface MessageDao {
     @Query("UPDATE messages SET isStreaming = 0 WHERE sessionKey = :sessionKey")
     suspend fun finishAllStreaming(sessionKey: String)
     
+    @Query("UPDATE messages SET content = :content, isStreaming = :isStreaming WHERE runId = :runId AND isStreaming = 1")
+    suspend fun updateStreamingMessageContent(runId: String, content: String, isStreaming: Boolean)
+    
+    @Query("UPDATE messages SET isStreaming = 0 WHERE runId = :runId")
+    suspend fun finishStreamingByRunId(runId: String)
+    
     @Delete
     suspend fun deleteMessage(message: MessageEntity)
     

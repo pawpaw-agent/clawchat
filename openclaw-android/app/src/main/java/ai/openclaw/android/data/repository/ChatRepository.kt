@@ -71,15 +71,17 @@ class ChatRepository @Inject constructor(
         
         // 3. 发送到服务器
         val actualSessionKey = if (sessionKey.isBlank()) "main" else sessionKey
+        val idempotencyKey = UUID.randomUUID().toString()
         val params = buildJsonObject {
             put("sessionKey", actualSessionKey)
-            put("messages", buildJsonArray {
-                add(buildJsonObject {
-                    put("role", "user")
-                    put("content", content)
-                })
-            })
+            put("message", content)
+            put("idempotencyKey", idempotencyKey)
         }
+        
+        android.util.Log.d("ChatRepository", "=== chat.send params ===")
+        android.util.Log.d("ChatRepository", "sessionKey: $actualSessionKey")
+        android.util.Log.d("ChatRepository", "message: ${content.take(50)}...")
+        android.util.Log.d("ChatRepository", "idempotencyKey: $idempotencyKey")
         
         val result = gatewayClient.request("chat.send", params)
         
@@ -221,6 +223,19 @@ class ChatRepository @Inject constructor(
     
     /**
      * 处理流式事件
+     * 
+     * Chat Event 格式 (Protocol v3):
+     * {
+     *   "event": "chat",
+     *   "payload": {
+     *     "runId": "...",
+     *     "sessionKey": "...",
+     *     "seq": 0,
+     *     "state": "delta" | "final" | "aborted" | "error",
+     *     "message": { ... },
+     *     "errorMessage": "..." // only when state=error
+     *   }
+     * }
      */
     suspend fun handleStreamEvent(event: JsonObject) {
         val eventType = event["event"]?.jsonPrimitive?.content ?: return
@@ -228,13 +243,38 @@ class ChatRepository @Inject constructor(
         
         when (eventType) {
             "chat" -> {
-                val messageId = payload["messageId"]?.jsonPrimitive?.content ?: return
-                val content = payload["content"]?.jsonPrimitive?.content ?: ""
-                val isDone = payload["done"]?.jsonPrimitive?.booleanOrNull ?: false
+                val runId = payload["runId"]?.jsonPrimitive?.content ?: return
+                val state = payload["state"]?.jsonPrimitive?.content ?: "delta"
+                val message = payload["message"] as? JsonObject
+                val errorMessage = payload["errorMessage"]?.jsonPrimitive?.content
                 
-                messageDao.updateMessageContent(messageId, content, !isDone)
+                android.util.Log.d("ChatRepository", "Chat event: runId=$runId, state=$state")
+                
+                when (state) {
+                    "delta" -> {
+                        // 增量更新：从 message 中提取内容
+                        val content = message?.let { extractMessageContent(it) } ?: ""
+                        // 查找并更新正在流式的消息
+                        messageDao.updateStreamingMessageContent(runId, content, true)
+                    }
+                    "final" -> {
+                        // 完成：标记消息为非流式
+                        messageDao.finishStreamingByRunId(runId)
+                    }
+                    "aborted" -> {
+                        // 中止：标记消息为非流式
+                        messageDao.finishStreamingByRunId(runId)
+                        android.util.Log.d("ChatRepository", "Chat aborted: runId=$runId")
+                    }
+                    "error" -> {
+                        // 错误：标记消息为非流式并记录错误
+                        messageDao.finishStreamingByRunId(runId)
+                        android.util.Log.e("ChatRepository", "Chat error: runId=$runId, error=$errorMessage")
+                    }
+                }
             }
             "chat.done" -> {
+                // 兼容旧版事件格式
                 val sessionKey = payload["key"]?.jsonPrimitive?.content ?: return
                 messageDao.finishAllStreaming(sessionKey)
             }
