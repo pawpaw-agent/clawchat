@@ -5,6 +5,7 @@ import ai.openclaw.android.core.network.model.SignedChallenge
 import android.content.Context
 import android.util.Base64
 import android.util.Log
+import com.google.crypto.tink.InsecureSecretKeyAccess
 import com.google.crypto.tink.TinkProtoKeysetFormat
 import com.google.crypto.tink.PublicKeySign
 import com.google.crypto.tink.KeysetHandle
@@ -51,7 +52,7 @@ class DeviceIdentityManager @Inject constructor(
             // 加载已存在的密钥
             try {
                 val keysetBytes = Base64.decode(existingKeysetHandle, Base64.DEFAULT)
-                cachedKeysetHandle = TinkProtoKeysetFormat.parseKeyset(keysetBytes, com.google.crypto.tink.secret.KeyAccess.publicAccess())
+                cachedKeysetHandle = TinkProtoKeysetFormat.parseKeyset(keysetBytes, InsecureSecretKeyAccess.get())
                 cachedPublicKeyRaw = Base64.decode(existingPublicKeyRaw, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
 
                 Log.d(TAG, "Loaded existing device identity: $existingDeviceId")
@@ -90,7 +91,7 @@ class DeviceIdentityManager @Inject constructor(
 
         // 获取公钥原始字节（Ed25519公钥是32字节）
         val publicKeyHandle = keysetHandle.publicKeysetHandle
-        val publicKeyBytes = TinkProtoKeysetFormat.serializeKeyset(publicKeyHandle, com.google.crypto.tink.secret.KeyAccess.publicAccess())
+        val publicKeyBytes = TinkProtoKeysetFormat.serializeKeyset(publicKeyHandle, InsecureSecretKeyAccess.get())
         
         // 从序列化的公钥keyset中提取原始公钥字节
         // Ed25519公钥在Tink中的格式是: 32字节的原始公钥
@@ -110,7 +111,7 @@ class DeviceIdentityManager @Inject constructor(
         )
 
         val keysetHandleBase64 = Base64.encodeToString(
-            TinkProtoKeysetFormat.serializeKeyset(keysetHandle, com.google.crypto.tink.secret.KeyAccess.publicAccess()),
+            TinkProtoKeysetFormat.serializeKeyset(keysetHandle, InsecureSecretKeyAccess.get()),
             Base64.DEFAULT
         )
 
@@ -138,7 +139,7 @@ class DeviceIdentityManager @Inject constructor(
     private fun extractPublicKeyBytes(publicKeysetHandle: KeysetHandle): ByteArray {
         // Ed25519 公钥是 32 字节
         // 使用 TinkProtoKeysetFormat 序列化后解析
-        val serialized = TinkProtoKeysetFormat.serializeKeyset(publicKeysetHandle, com.google.crypto.tink.secret.KeyAccess.publicAccess())
+        val serialized = TinkProtoKeysetFormat.serializeKeyset(publicKeysetHandle, InsecureSecretKeyAccess.get())
         // 解析 proto 找到公钥数据
         val keyset = com.google.crypto.tink.proto.Keyset.parseFrom(serialized)
         val key = keyset.keyList.firstOrNull { key -> key.status == com.google.crypto.tink.proto.KeyStatusType.ENABLED }
@@ -267,7 +268,7 @@ class DeviceIdentityManager @Inject constructor(
 
         return try {
             val keysetBytes = Base64.decode(keysetHandleBase64, Base64.DEFAULT)
-            cachedKeysetHandle = TinkProtoKeysetFormat.parseKeyset(keysetBytes, com.google.crypto.tink.secret.KeyAccess.publicAccess())
+            cachedKeysetHandle = TinkProtoKeysetFormat.parseKeyset(keysetBytes, InsecureSecretKeyAccess.get())
             cachedKeysetHandle
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load keyset from storage", e)
