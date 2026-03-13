@@ -100,7 +100,9 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideApprovalRepository(): ApprovalRepository = ApprovalRepository()
+    fun provideApprovalRepository(
+        gatewayClient: GatewayClient
+    ): ApprovalRepository = ApprovalRepository(gatewayClient)
 
     @Provides
     @Singleton
