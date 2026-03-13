@@ -98,6 +98,9 @@
     <string name="chat_sending_image">Sending image…</string>
     <string name="chat_voice_input">Voice input</string>
     <string name="chat_audio_permission_denied">Audio recording permission denied</string>
+    <string name="chat_message_copy">Copy</string>
+    <string name="chat_message_delete">Delete</string>
+    <string name="chat_message_copied">Copied to clipboard</string>
     
     <!-- Approval Screen -->
     <string name="approvals_title">Approvals</string>

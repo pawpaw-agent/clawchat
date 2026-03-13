@@ -45,6 +45,9 @@ interface MessageDao {
     @Query("UPDATE messages SET isStreaming = 0, error = :error WHERE runId = :runId")
     suspend fun setErrorByRunId(runId: String, error: String)
     
+    @Query("DELETE FROM messages WHERE id = :messageId")
+    suspend fun deleteMessageById(messageId: String)
+    
     @Delete
     suspend fun deleteMessage(message: MessageEntity)
     

@@ -413,6 +413,13 @@ class ChatRepository @Inject constructor(
             }
         }
     }
+    
+    /**
+     * 删除消息（本地）
+     */
+    suspend fun deleteMessage(messageId: String) {
+        messageDao.deleteMessageById(messageId)
+    }
 }
 
 // 扩展函数

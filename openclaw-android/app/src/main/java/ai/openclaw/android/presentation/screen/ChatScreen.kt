@@ -15,7 +15,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -292,7 +294,18 @@ fun ChatScreen(
                 }
                 
                 items(uiState.messages, key = { it.id }) { message ->
-                    MessageBubble(message = message)
+                    MessageBubble(
+                        message = message,
+                        onCopy = { text ->
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            val clip = android.content.ClipData.newPlainText("message", text)
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(context, context.getString(R.string.chat_message_copied), Toast.LENGTH_SHORT).show()
+                        },
+                        onDelete = { messageId ->
+                            viewModel.deleteMessage(messageId)
+                        }
+                    )
                 }
                 
                 // Streaming indicator
@@ -372,9 +385,16 @@ fun ChatScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun MessageBubble(message: Message) {
+private fun MessageBubble(
+    message: Message,
+    onCopy: (String) -> Unit = {},
+    onDelete: (String) -> Unit = {}
+) {
     val isUser = message.role == MessageRole.USER
+    var showMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     
     Row(
         modifier = Modifier
@@ -382,91 +402,127 @@ private fun MessageBubble(message: Message) {
             .padding(horizontal = 16.dp),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = if (isUser) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant
+        Box {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isUser) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    }
+                ),
+                modifier = Modifier
+                    .widthIn(max = 320.dp)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 16.dp,
+                            bottomStart = if (isUser) 16.dp else 4.dp,
+                            bottomEnd = if (isUser) 4.dp else 16.dp
+                        )
+                    )
+                    .combinedClickable(
+                        onClick = {},
+                        onLongClick = { showMenu = true }
+                    )
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp)
+                ) {
+                    // Role indicator
+                    Text(
+                        text = message.role.name.lowercase().replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isUser) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    // Message content
+                    Text(
+                        text = message.content.ifEmpty { "..." },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isUser) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                    
+                    // Streaming indicator
+                    if (message.isStreaming) {
+                        Row(
+                            modifier = Modifier.padding(top = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(12.dp),
+                                strokeWidth = 1.5.dp
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                stringResource(R.string.chat_streaming),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    }
+                    
+                    // Error indicator
+                    message.error?.let { error ->
+                        Row(
+                            modifier = Modifier.padding(top = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Error,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = error,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 }
-            ),
-            modifier = Modifier
-                .widthIn(max = 320.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (isUser) 16.dp else 4.dp,
-                        bottomEnd = if (isUser) 4.dp else 16.dp
+            }
+            
+            // Long press menu
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.chat_message_copy)) },
+                    onClick = {
+                        showMenu = false
+                        onCopy(message.content)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.chat_message_delete)) },
+                    onClick = {
+                        showMenu = false
+                        onDelete(message.id)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.error
                     )
                 )
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp)
-            ) {
-                // Role indicator
-                Text(
-                    text = message.role.name.lowercase().replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isUser) {
-                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                // Message content
-                Text(
-                    text = message.content.ifEmpty { "..." },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (isUser) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-                
-                // Streaming indicator
-                if (message.isStreaming) {
-                    Row(
-                        modifier = Modifier.padding(top = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(12.dp),
-                            strokeWidth = 1.5.dp
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            stringResource(R.string.chat_streaming),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                }
-                
-                // Error indicator
-                message.error?.let { error ->
-                    Row(
-                        modifier = Modifier.padding(top = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Error,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = error,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
             }
         }
     }
