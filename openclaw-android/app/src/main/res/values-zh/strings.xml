@@ -158,4 +158,10 @@
     <string name="settings_model_loading">加载模型中…</string>
     <string name="settings_model_empty">暂无可用模型</string>
     <string name="settings_model_context">%dK 上下文</string>
+    
+    <!-- Agent Settings -->
+    <string name="settings_agent">智能体</string>
+    <string name="settings_agent_selector">智能体</string>
+    <string name="settings_agent_loading">加载智能体中…</string>
+    <string name="settings_agent_empty">暂无可用智能体</string>
 </resources>

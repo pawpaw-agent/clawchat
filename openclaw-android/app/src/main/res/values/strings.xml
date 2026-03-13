@@ -159,4 +159,10 @@
     <string name="settings_model_loading">Loading models…</string>
     <string name="settings_model_empty">No models available</string>
     <string name="settings_model_context">%dk context</string>
+    
+    <!-- Agent Settings -->
+    <string name="settings_agent">Agent</string>
+    <string name="settings_agent_selector">Agent</string>
+    <string name="settings_agent_loading">Loading agents…</string>
+    <string name="settings_agent_empty">No agents available</string>
 </resources>

@@ -144,6 +144,23 @@ class SessionRepository @Inject constructor(
         
         return gatewayClient.request("sessions.reset", params).map { }
     }
+    
+    /**
+     * 解析指定 Agent 的 session key
+     * 
+     * @param agentId Agent ID
+     * @return 解析后的 session key
+     */
+    suspend fun resolveSession(agentId: String? = null): Result<String> {
+        val params = buildJsonObject {
+            agentId?.let { put("agentId", it) }
+            put("includeGlobal", true)
+        }
+        
+        return gatewayClient.request("sessions.resolve", params).map { response ->
+            response["key"]?.jsonPrimitive?.content ?: "main"
+        }
+    }
 }
 
 // 扩展函数：Entity -> Domain

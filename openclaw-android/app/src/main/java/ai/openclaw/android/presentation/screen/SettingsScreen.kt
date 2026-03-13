@@ -1,6 +1,7 @@
 package ai.openclaw.android.presentation.screen
 
 import ai.openclaw.android.R
+import ai.openclaw.android.domain.model.AgentInfo
 import ai.openclaw.android.domain.model.GatewayConfig
 import ai.openclaw.android.domain.model.ModelInfo
 import ai.openclaw.android.presentation.theme.ThemeMode
@@ -61,6 +62,20 @@ fun SettingsScreen(
                     currentModel = uiState.currentModel,
                     isLoading = uiState.isLoadingModels,
                     onModelSelected = { viewModel.setModel(it) }
+                )
+            }
+            
+            // Agent Section
+            item {
+                SettingsSectionHeader(title = stringResource(R.string.settings_agent))
+            }
+            
+            item {
+                AgentSelector(
+                    agents = uiState.agents,
+                    currentAgent = uiState.currentAgent,
+                    isLoading = uiState.isLoadingAgents,
+                    onAgentSelected = { viewModel.setAgent(it) }
                 )
             }
             
@@ -564,4 +579,113 @@ private fun AddGatewayDialog(
             }
         }
     )
+}
+
+@Composable
+private fun AgentSelector(
+    agents: List<AgentInfo>,
+    currentAgent: String?,
+    isLoading: Boolean,
+    onAgentSelected: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = stringResource(R.string.settings_agent_selector),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+            
+            when {
+                isLoading -> {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = stringResource(R.string.settings_agent_loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                agents.isEmpty() -> {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = stringResource(R.string.settings_agent_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                else -> {
+                    agents.forEach { agent ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = agent.id == currentAgent,
+                                    onClick = { onAgentSelected(agent.id) },
+                                    role = Role.RadioButton
+                                )
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = agent.id == currentAgent,
+                                onClick = null
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    agent.identity?.emoji?.let { emoji ->
+                                        Text(
+                                            text = emoji,
+                                            style = MaterialTheme.typography.titleMedium
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                    Text(
+                                        text = agent.identity?.name ?: agent.name ?: agent.id,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                                agent.model?.let { model ->
+                                    Text(
+                                        text = "Model: $model",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

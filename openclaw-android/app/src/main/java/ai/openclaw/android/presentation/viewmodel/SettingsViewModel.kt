@@ -1,8 +1,10 @@
 package ai.openclaw.android.presentation.viewmodel
 
+import ai.openclaw.android.data.repository.AgentsRepository
 import ai.openclaw.android.data.repository.GatewayConfigRepository
 import ai.openclaw.android.data.repository.ModelsRepository
 import ai.openclaw.android.data.repository.SessionRepository
+import ai.openclaw.android.domain.model.AgentInfo
 import ai.openclaw.android.domain.model.GatewayConfig
 import ai.openclaw.android.domain.model.ModelInfo
 import ai.openclaw.android.presentation.theme.ThemeMode
@@ -23,8 +25,11 @@ data class SettingsUiState(
     val autoReconnect: Boolean = true,
     val models: List<ModelInfo> = emptyList(),
     val currentModel: String? = null,
+    val agents: List<AgentInfo> = emptyList(),
+    val currentAgent: String? = null,
     val isLoading: Boolean = false,
     val isLoadingModels: Boolean = false,
+    val isLoadingAgents: Boolean = false,
     val error: String? = null
 )
 
@@ -32,6 +37,7 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val gatewayConfigRepository: GatewayConfigRepository,
     private val modelsRepository: ModelsRepository,
+    private val agentsRepository: AgentsRepository,
     private val sessionRepository: SessionRepository
 ) : ViewModel() {
     
@@ -41,6 +47,7 @@ class SettingsViewModel @Inject constructor(
     init {
         loadSettings()
         loadModels()
+        loadAgents()
     }
     
     private fun loadSettings() {
@@ -56,10 +63,13 @@ class SettingsViewModel @Inject constructor(
             }
         }
         
-        // 加载当前会话的模型
+        // 加载当前会话的模型和 agent
         viewModelScope.launch {
             sessionRepository.getSessionByKey("main")?.let { session ->
-                _uiState.value = _uiState.value.copy(currentModel = session.model)
+                _uiState.value = _uiState.value.copy(
+                    currentModel = session.model,
+                    currentAgent = session.provider // provider 存储 agentId
+                )
             }
         }
     }
@@ -79,6 +89,26 @@ class SettingsViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         isLoadingModels = false,
                         error = "Failed to load models: ${it.message}"
+                    )
+                }
+        }
+    }
+    
+    private fun loadAgents() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingAgents = true)
+            
+            agentsRepository.getAgents()
+                .onSuccess { agents ->
+                    _uiState.value = _uiState.value.copy(
+                        agents = agents,
+                        isLoadingAgents = false
+                    )
+                }
+                .onFailure {
+                    _uiState.value = _uiState.value.copy(
+                        isLoadingAgents = false,
+                        error = "Failed to load agents: ${it.message}"
                     )
                 }
         }
@@ -105,6 +135,21 @@ class SettingsViewModel @Inject constructor(
                 .onFailure {
                     _uiState.value = _uiState.value.copy(
                         error = "Failed to set model: ${it.message}"
+                    )
+                }
+        }
+    }
+    
+    fun setAgent(agentId: String) {
+        viewModelScope.launch {
+            // 使用 sessions.resolve 获取特定 agent 的 session
+            sessionRepository.resolveSession(agentId = agentId)
+                .onSuccess { sessionKey ->
+                    _uiState.value = _uiState.value.copy(currentAgent = agentId)
+                }
+                .onFailure {
+                    _uiState.value = _uiState.value.copy(
+                        error = "Failed to set agent: ${it.message}"
                     )
                 }
         }
