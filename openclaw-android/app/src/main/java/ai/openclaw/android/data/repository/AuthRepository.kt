@@ -6,9 +6,13 @@ import ai.openclaw.android.core.network.ConnectionState
 import ai.openclaw.android.core.network.GatewayClient
 import ai.openclaw.android.core.network.model.ConnectChallenge
 import ai.openclaw.android.core.network.model.HelloOk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -44,6 +48,8 @@ class AuthRepository @Inject constructor(
     private val deviceIdentityManager: DeviceIdentityManager,
     private val tokenStorage: SecureTokenStorage
 ) {
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
@@ -52,6 +58,37 @@ class AuthRepository @Inject constructor(
 
     private val _lastError = MutableStateFlow<String?>(null)
     val lastError: StateFlow<String?> = _lastError.asStateFlow()
+    
+    init {
+        // 监听连接状态变化，自动更新 AuthState
+        scope.launch {
+            gatewayClient.connectionState.collect { state ->
+                when (state) {
+                    is ConnectionState.Connected -> {
+                        _authState.value = AuthState.Connected(state.helloOk)
+                        _lastError.value = null
+                    }
+                    is ConnectionState.Connecting -> {
+                        _authState.value = AuthState.Connecting
+                    }
+                    is ConnectionState.ChallengeReceived -> {
+                        _authState.value = AuthState.WaitingForChallenge
+                    }
+                    is ConnectionState.Authenticating -> {
+                        _authState.value = AuthState.Authenticating
+                    }
+                    is ConnectionState.Disconnected -> {
+                        // 只有在用户手动断开时才更新为 Idle
+                        // 自动断开由 GatewayClient 自动重连处理
+                    }
+                    is ConnectionState.Error -> {
+                        // 错误状态由 GatewayClient 自动重连处理
+                        // 如果重连失败会显示错误
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * 连接并认证

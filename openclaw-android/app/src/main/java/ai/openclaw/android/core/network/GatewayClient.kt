@@ -12,6 +12,10 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val MAX_RECONNECT_ATTEMPTS = 5
+private const val RECONNECT_BASE_DELAY_MS = 1000L
+private const val RECONNECT_MAX_DELAY_MS = 30000L
+
 /**
  * Gateway WebSocket 客户端
  */
@@ -20,6 +24,8 @@ class GatewayClient @Inject constructor(
     private val okHttpClient: OkHttpClient,
     private val json: Json
 ) {
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    
     private var webSocket: WebSocket? = null
     private val pendingRequests = ConcurrentHashMap<String, CompletableDeferred<WsFrame.Response>>()
     private val _events = MutableSharedFlow<WsFrame.Event>(extraBufferCapacity = 64)
@@ -30,10 +36,75 @@ class GatewayClient @Inject constructor(
     private var currentToken: String? = null
     private var reconnectJob: Job? = null
     private var deviceIdentityManager: DeviceIdentityManager? = null
+    private var autoReconnectEnabled: Boolean = true
+    private var reconnectAttempts: Int = 0
+    private var isManualDisconnect: Boolean = false
     
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
     val events: SharedFlow<WsFrame.Event> = _events.asSharedFlow()
     val challenge: StateFlow<ConnectChallenge?> = _challenge.asStateFlow()
+    
+    /**
+     * 启用/禁用自动重连
+     */
+    fun setAutoReconnect(enabled: Boolean) {
+        autoReconnectEnabled = enabled
+        if (!enabled) {
+            reconnectJob?.cancel()
+        }
+    }
+    
+    /**
+     * 手动重连
+     */
+    suspend fun reconnect(): Result<HelloOk> {
+        val url = currentUrl ?: return Result.failure(Exception("No previous connection"))
+        val token = currentToken
+        val manager = deviceIdentityManager ?: return Result.failure(Exception("No device identity"))
+        
+        return connect(url, manager, token)
+    }
+    
+    /**
+     * 计算重连延迟（指数退避）
+     */
+    private fun calculateReconnectDelay(): Long {
+        val delay = RECONNECT_BASE_DELAY_MS * (1 shl reconnectAttempts.coerceAtMost(4))
+        return delay.coerceAtMost(RECONNECT_MAX_DELAY_MS)
+    }
+    
+    /**
+     * 触发自动重连
+     */
+    private fun triggerReconnect() {
+        if (!autoReconnectEnabled) return
+        if (currentUrl == null || deviceIdentityManager == null) return
+        if (reconnectJob?.isActive == true) return
+        
+        reconnectJob = scope.launch {
+            while (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                val delay = calculateReconnectDelay()
+                android.util.Log.d("GatewayClient", "Reconnecting in ${delay}ms (attempt ${reconnectAttempts + 1}/$MAX_RECONNECT_ATTEMPTS)")
+                
+                delay(delay)
+                
+                reconnectAttempts++
+                val result = reconnect()
+                
+                if (result.isSuccess) {
+                    android.util.Log.d("GatewayClient", "Reconnected successfully")
+                    reconnectAttempts = 0
+                    return@launch
+                } else {
+                    android.util.Log.w("GatewayClient", "Reconnect failed: ${result.exceptionOrNull()?.message}")
+                }
+            }
+            
+            // 所有重连尝试失败
+            android.util.Log.e("GatewayClient", "All reconnect attempts failed")
+            _connectionState.value = ConnectionState.Error("Connection lost - max reconnect attempts reached")
+        }
+    }
 
     /**
      * 连接到 Gateway
@@ -53,6 +124,7 @@ class GatewayClient @Inject constructor(
         currentUrl = url
         currentToken = token
         this@GatewayClient.deviceIdentityManager = deviceIdentityManager
+        isManualDisconnect = false
         
         val challengeResult = waitForChallenge(url)
         if (challengeResult.isFailure) {
@@ -78,6 +150,7 @@ class GatewayClient @Inject constructor(
         // 成功后更新连接状态
         result.onSuccess { helloOk ->
             _connectionState.value = ConnectionState.Connected(helloOk)
+            reconnectAttempts = 0  // 重置重连计数
         }
         
         return@withContext result
@@ -127,15 +200,27 @@ class GatewayClient @Inject constructor(
                 }
                 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                    android.util.Log.d("GatewayClient", "WebSocket closed: code=$code, reason=$reason")
                     _connectionState.value = ConnectionState.Disconnected
                     clearPendingRequests()
+                    
+                    // 非用户主动断开时触发重连
+                    if (!isManualDisconnect && code != 1000) {
+                        triggerReconnect()
+                    }
                 }
                 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    android.util.Log.e("GatewayClient", "WebSocket failure: ${t.message}")
                     _connectionState.value = ConnectionState.Error(t.message ?: "Connection failed")
                     clearPendingRequests()
                     if (continuation.isActive) {
                         continuation.resume(Result.failure(t), null)
+                    }
+                    
+                    // 触发自动重连
+                    if (!isManualDisconnect) {
+                        triggerReconnect()
                     }
                 }
             }
@@ -261,7 +346,9 @@ class GatewayClient @Inject constructor(
      * 断开连接
      */
     fun disconnect() {
+        isManualDisconnect = true
         reconnectJob?.cancel()
+        reconnectAttempts = 0
         webSocket?.close(1000, "Client disconnect")
         webSocket = null
         _connectionState.value = ConnectionState.Disconnected

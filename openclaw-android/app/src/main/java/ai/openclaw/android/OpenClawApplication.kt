@@ -1,5 +1,6 @@
 package ai.openclaw.android
 
+import ai.openclaw.android.core.network.AppLifecycleObserver
 import ai.openclaw.android.core.network.ApprovalEventManager
 import android.app.Application
 import android.util.Log
@@ -13,6 +14,9 @@ class OpenClawApplication : Application() {
     
     @Inject
     lateinit var approvalEventManager: ApprovalEventManager
+    
+    @Inject
+    lateinit var appLifecycleObserver: AppLifecycleObserver
     
     companion object {
         private const val TAG = "OpenClawApp"
@@ -31,6 +35,10 @@ class OpenClawApplication : Application() {
     
     override fun onCreate() {
         super.onCreate()
+        
+        // 注册 App 生命周期观察者
+        appLifecycleObserver.register()
+        Log.d(TAG, "App lifecycle observer registered")
         
         // 启动审批事件监听
         approvalEventManager.startListening()
