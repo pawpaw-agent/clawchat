@@ -152,13 +152,6 @@
     <!-- Channel List Screen -->
     <string name="channels_qr_placeholder">二维码</string>
     
-    <!-- Model Settings -->
-    <string name="settings_model">模型</string>
-    <string name="settings_model_selector">AI 模型</string>
-    <string name="settings_model_loading">加载模型中…</string>
-    <string name="settings_model_empty">暂无可用模型</string>
-    <string name="settings_model_context">%dK 上下文</string>
-    
     <!-- Agent Settings -->
     <string name="settings_agent">智能体</string>
     <string name="settings_agent_selector">智能体</string>

@@ -3,7 +3,6 @@ package ai.openclaw.android.presentation.screen
 import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.AgentInfo
 import ai.openclaw.android.domain.model.GatewayConfig
-import ai.openclaw.android.domain.model.ModelInfo
 import ai.openclaw.android.presentation.theme.ThemeMode
 import ai.openclaw.android.presentation.viewmodel.SettingsViewModel
 import androidx.compose.foundation.layout.*
@@ -51,20 +50,6 @@ fun SettingsScreen(
                 .padding(padding),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            // Model Section
-            item {
-                SettingsSectionHeader(title = stringResource(R.string.settings_model))
-            }
-            
-            item {
-                ModelSelector(
-                    models = uiState.models,
-                    currentModel = uiState.currentModel,
-                    isLoading = uiState.isLoadingModels,
-                    onModelSelected = { viewModel.setModel(it) }
-                )
-            }
-            
             // Agent Section
             item {
                 SettingsSectionHeader(title = stringResource(R.string.settings_agent))
@@ -208,113 +193,6 @@ private fun SettingsSectionHeader(title: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
     )
-}
-
-@Composable
-private fun ModelSelector(
-    models: List<ModelInfo>,
-    currentModel: String?,
-    isLoading: Boolean,
-    onModelSelected: (String) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = stringResource(R.string.settings_model_selector),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-            )
-            
-            when {
-                isLoading -> {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = stringResource(R.string.settings_model_loading),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                models.isEmpty() -> {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = stringResource(R.string.settings_model_empty),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                else -> {
-                    models.forEach { model ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(
-                                    selected = model.id == currentModel,
-                                    onClick = { onModelSelected(model.id) },
-                                    role = Role.RadioButton
-                                )
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = model.id == currentModel,
-                                onClick = null
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = model.name,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                if (model.contextWindow > 0) {
-                                    Text(
-                                        text = "${model.contextWindow / 1000}k context",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            if (model.reasoning) {
-                                SuggestionChip(
-                                    onClick = {},
-                                    label = { Text("🧠") },
-                                    modifier = Modifier.height(24.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable
