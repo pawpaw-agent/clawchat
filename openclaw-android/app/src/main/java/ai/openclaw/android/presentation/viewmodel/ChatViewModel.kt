@@ -4,6 +4,7 @@ import ai.openclaw.android.core.network.ConnectionState
 import ai.openclaw.android.core.network.GatewayClient
 import ai.openclaw.android.data.repository.AgentsRepository
 import ai.openclaw.android.data.repository.ChatRepository
+import ai.openclaw.android.data.repository.SessionRepository
 import ai.openclaw.android.domain.model.Message
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
@@ -32,6 +33,7 @@ data class ChatUiState(
     val isLoadingHistory: Boolean = false,
     val agentEmoji: String? = null,
     val agentName: String? = null,
+    val agentId: String? = null,
     val isOnline: Boolean = true,
     val connectionStatus: String? = null,
     val pendingImageUri: Uri? = null
@@ -42,6 +44,7 @@ class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val gatewayClient: GatewayClient,
     private val agentsRepository: AgentsRepository,
+    private val sessionRepository: SessionRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -55,6 +58,7 @@ class ChatViewModel @Inject constructor(
         loadAgentInfo()
         observeStreamEvents()
         observeConnectionState()
+        observeCurrentAgent()
     }
     
     private fun loadMessages() {
@@ -73,17 +77,35 @@ class ChatViewModel @Inject constructor(
         }
     }
     
-    private fun loadAgentInfo() {
+    private fun loadAgentInfo(agentId: String? = null) {
         viewModelScope.launch {
             agentsRepository.getAgents()
                 .onSuccess { agents ->
-                    // 获取第一个 agent（通常是 main）
-                    val agent = agents.firstOrNull()
+                    // 优先使用指定的 agentId，否则使用第一个 agent
+                    val agent = if (agentId != null) {
+                        agents.find { it.id == agentId }
+                    } else {
+                        agents.firstOrNull()
+                    }
                     _uiState.value = _uiState.value.copy(
                         agentEmoji = agent?.identity?.emoji,
-                        agentName = agent?.identity?.name ?: agent?.name ?: agent?.id
+                        agentName = agent?.identity?.name ?: agent?.name ?: agent?.id,
+                        agentId = agent?.id
                     )
                 }
+        }
+    }
+    
+    /**
+     * 监听当前 agent 变化
+     */
+    private fun observeCurrentAgent() {
+        viewModelScope.launch {
+            sessionRepository.currentAgentId.collect { agentId ->
+                if (agentId != null && agentId != _uiState.value.agentId) {
+                    loadAgentInfo(agentId)
+                }
+            }
         }
     }
     

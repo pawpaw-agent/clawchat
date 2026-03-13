@@ -5,6 +5,8 @@ import ai.openclaw.android.data.local.dao.SessionDao
 import ai.openclaw.android.data.local.entity.SessionEntity
 import ai.openclaw.android.domain.model.Session
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.*
 import javax.inject.Inject
@@ -18,6 +20,10 @@ class SessionRepository @Inject constructor(
     private val sessionDao: SessionDao,
     private val gatewayClient: GatewayClient
 ) {
+    // 当前选中的 agentId
+    private val _currentAgentId = MutableStateFlow<String?>(null)
+    val currentAgentId: StateFlow<String?> = _currentAgentId
+    
     /**
      * 获取所有会话
      */
@@ -158,6 +164,10 @@ class SessionRepository @Inject constructor(
         }
         
         return gatewayClient.request("sessions.resolve", params).map { response ->
+            // 更新当前 agentId
+            if (agentId != null) {
+                _currentAgentId.value = agentId
+            }
             response["key"]?.jsonPrimitive?.content ?: "main"
         }
     }
