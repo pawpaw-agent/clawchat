@@ -1,10 +1,10 @@
 package ai.openclaw.android.presentation.viewmodel
 
+import ai.openclaw.android.core.network.ConnectionState
 import ai.openclaw.android.core.network.GatewayClient
 import ai.openclaw.android.data.repository.AgentsRepository
 import ai.openclaw.android.data.repository.ChatRepository
 import ai.openclaw.android.domain.model.Message
-import ai.openclaw.android.domain.model.MessageRole
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -30,7 +30,9 @@ data class ChatUiState(
     val hasMoreHistory: Boolean = true,
     val isLoadingHistory: Boolean = false,
     val agentEmoji: String? = null,
-    val agentName: String? = null
+    val agentName: String? = null,
+    val isOnline: Boolean = true,
+    val connectionStatus: String? = null
 )
 
 @HiltViewModel
@@ -50,6 +52,7 @@ class ChatViewModel @Inject constructor(
         loadMessages()
         loadAgentInfo()
         observeStreamEvents()
+        observeConnectionState()
     }
     
     private fun loadMessages() {
@@ -105,6 +108,24 @@ class ChatViewModel @Inject constructor(
         }
     }
     
+    private fun observeConnectionState() {
+        viewModelScope.launch {
+            gatewayClient.connectionState.collect { state ->
+                val (isOnline, status) = when (state) {
+                    is ConnectionState.Connected -> true to null
+                    is ConnectionState.Connecting -> false to "Connecting..."
+                    is ConnectionState.ChallengeReceived -> false to "Authenticating..."
+                    is ConnectionState.Disconnected -> false to "Offline"
+                    is ConnectionState.Error -> false to "Connection Error"
+                }
+                _uiState.value = _uiState.value.copy(
+                    isOnline = isOnline,
+                    connectionStatus = status
+                )
+            }
+        }
+    }
+    
     fun updateInputText(text: String) {
         _uiState.value = _uiState.value.copy(inputText = text)
     }
@@ -155,7 +176,6 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoadingHistory = true)
             
-            val offset = _uiState.value.messages.size
             chatRepository.syncHistory(sessionKey, limit = 50)
                 .onSuccess { messages ->
                     _uiState.value = _uiState.value.copy(

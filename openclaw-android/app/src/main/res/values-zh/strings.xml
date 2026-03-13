@@ -89,6 +89,7 @@
     <string name="chat_input_hint">输入消息…</string>
     <string name="chat_send">发送</string>
     <string name="chat_streaming">输出中…</string>
+    <string name="chat_offline">离线 - 查看缓存消息</string>
     
     <!-- Approval Screen -->
     <string name="approvals_title">审批</string>

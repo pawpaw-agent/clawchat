@@ -93,6 +93,47 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Offline status banner
+            if (!uiState.isOnline || uiState.connectionStatus != null) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = if (uiState.isOnline) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.errorContainer
+                    }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = if (uiState.isOnline) Icons.Default.Cloud else Icons.Default.CloudOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = if (uiState.isOnline) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = uiState.connectionStatus ?: if (uiState.isOnline) "Online" else stringResource(R.string.chat_offline),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (uiState.isOnline) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            }
+                        )
+                    }
+                }
+            }
+            
             // Messages list
             LazyColumn(
                 modifier = Modifier
