@@ -96,6 +96,8 @@
     <string name="chat_send_image">Send Image</string>
     <string name="chat_send_image_desc">Send this image with your message?</string>
     <string name="chat_sending_image">Sending image…</string>
+    <string name="chat_voice_input">Voice input</string>
+    <string name="chat_audio_permission_denied">Audio recording permission denied</string>
     
     <!-- Approval Screen -->
     <string name="approvals_title">Approvals</string>

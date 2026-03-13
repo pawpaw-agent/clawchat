@@ -4,6 +4,13 @@ import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.Message
 import ai.openclaw.android.domain.model.MessageRole
 import ai.openclaw.android.presentation.viewmodel.ChatViewModel
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,14 +30,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
-import android.net.Uri
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +48,82 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    
+    // Speech recognizer state
+    var isListening by remember { mutableStateOf(false) }
+    var speechRecognizer: SpeechRecognizer? by remember { mutableStateOf(null) }
+    
+    // Permission launcher for audio
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            Toast.makeText(context, context.getString(R.string.chat_audio_permission_denied), Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    // Initialize speech recognizer
+    DisposableEffect(Unit) {
+        val recognizer = SpeechRecognizer.createSpeechRecognizer(context)
+        val intent = android.content.Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN")
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+        }
+        
+        recognizer.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: android.os.Bundle?) {
+                isListening = true
+            }
+            
+            override fun onBeginningOfSpeech() {}
+            
+            override fun onRmsChanged(rmsdB: Float) {}
+            
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            
+            override fun onEndOfSpeech() {
+                isListening = false
+            }
+            
+            override fun onError(error: Int) {
+                isListening = false
+                val errorMsg = when (error) {
+                    SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
+                    SpeechRecognizer.ERROR_CLIENT -> "Client side error"
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
+                    SpeechRecognizer.ERROR_NETWORK -> "Network error"
+                    SpeechRecognizer.ERROR_NO_MATCH -> "No speech detected"
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech input"
+                    else -> "Error: $error"
+                }
+                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+            }
+            
+            override fun onResults(results: android.os.Bundle?) {
+                isListening = false
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                matches?.firstOrNull()?.let { text ->
+                    viewModel.updateInputText(text)
+                }
+            }
+            
+            override fun onPartialResults(partialResults: android.os.Bundle?) {
+                val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                matches?.firstOrNull()?.let { text ->
+                    viewModel.updateInputText(text)
+                }
+            }
+            
+            override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
+        })
+        
+        speechRecognizer = recognizer
+        
+        onDispose {
+            recognizer.destroy()
+        }
+    }
     
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -251,12 +333,32 @@ fun ChatScreen(
             MessageInput(
                 text = uiState.inputText,
                 isSending = uiState.isSending || uiState.isStreaming,
+                isListening = isListening,
                 onTextChange = { viewModel.updateInputText(it) },
                 onSend = { viewModel.sendMessage() },
                 onAttach = {
                     imagePickerLauncher.launch(
                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                     )
+                },
+                onMicClick = {
+                    // Check permission
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                        == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        if (isListening) {
+                            speechRecognizer?.stopListening()
+                        } else {
+                            val intent = android.content.Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN")
+                                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                            }
+                            speechRecognizer?.startListening(intent)
+                        }
+                    } else {
+                        audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
                 }
             )
         }
@@ -374,9 +476,11 @@ private fun MessageBubble(message: Message) {
 private fun MessageInput(
     text: String,
     isSending: Boolean,
+    isListening: Boolean,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
-    onAttach: () -> Unit = {}
+    onAttach: () -> Unit = {},
+    onMicClick: () -> Unit = {}
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -409,7 +513,27 @@ private fun MessageInput(
                 shape = RoundedCornerShape(24.dp)
             )
             
-            Spacer(modifier = Modifier.width(8.dp))
+            // Microphone button
+            IconButton(
+                onClick = onMicClick,
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = if (isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                if (isListening) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Mic,
+                        contentDescription = stringResource(R.string.chat_voice_input)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(4.dp))
             
             FilledIconButton(
                 onClick = onSend,

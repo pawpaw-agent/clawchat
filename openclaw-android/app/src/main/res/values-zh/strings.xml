@@ -95,6 +95,8 @@
     <string name="chat_send_image">发送图片</string>
     <string name="chat_send_image_desc">发送这张图片？</string>
     <string name="chat_sending_image">发送图片中…</string>
+    <string name="chat_voice_input">语音输入</string>
+    <string name="chat_audio_permission_denied">录音权限被拒绝</string>
     
     <!-- Approval Screen -->
     <string name="approvals_title">审批</string>
