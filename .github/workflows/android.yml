@@ -49,11 +49,18 @@ jobs:
             -validity 10000 \
             -dname "CN=Clawchat Debug,O=OpenClaw,C=CN"
           echo "KEYSTORE_SOURCE=generated" >> $GITHUB_ENV
-          # 输出 base64 方便用户添加到 Secrets
-          echo "::notice::To persist keystore, add this to GitHub Secrets (DEBUG_KEYSTORE_BASE64):"
-          cat openclaw-android/keystores/debug.keystore | base64 -w 0 | head -c 100
-          echo "..."
+          # 保存 base64 到文件
+          cat openclaw-android/keystores/debug.keystore | base64 -w 0 > /tmp/keystore_base64.txt
         fi
+
+    # 上传 keystore base64 作为 artifact（仅首次生成时）
+    - name: Upload keystore base64 artifact
+      if: env.KEYSTORE_SOURCE == 'generated'
+      uses: actions/upload-artifact@v4
+      with:
+        name: keystore-base64
+        path: /tmp/keystore_base64.txt
+        retention-days: 90
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew || true
