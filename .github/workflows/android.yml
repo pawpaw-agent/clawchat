@@ -28,8 +28,17 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
-    # 生成固定的 debug keystore（确保每次构建签名一致）
+    # 恢复缓存的 keystore（签名一致性）
+    - name: Restore keystore from cache
+      id: cache-keystore
+      uses: actions/cache@v4
+      with:
+        path: openclaw-android/keystores/debug.keystore
+        key: debug-keystore-v1
+
+    # 仅在缓存未命中时生成 keystore
     - name: Generate debug keystore
+      if: steps.cache-keystore.outputs.cache-hit != 'true'
       run: |
         mkdir -p openclaw-android/keystores
         keytool -genkey -v \
