@@ -48,7 +48,24 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.chat_title)) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Agent emoji
+                        uiState.agentEmoji?.let { emoji ->
+                            Text(
+                                text = emoji,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        // Agent name or default title
+                        Text(
+                            text = uiState.agentName ?: stringResource(R.string.chat_title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.chat_back))

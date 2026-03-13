@@ -1,6 +1,7 @@
 package ai.openclaw.android.presentation.viewmodel
 
 import ai.openclaw.android.core.network.GatewayClient
+import ai.openclaw.android.data.repository.AgentsRepository
 import ai.openclaw.android.data.repository.ChatRepository
 import ai.openclaw.android.domain.model.Message
 import ai.openclaw.android.domain.model.MessageRole
@@ -27,13 +28,16 @@ data class ChatUiState(
     val currentRunId: String? = null,
     val error: String? = null,
     val hasMoreHistory: Boolean = true,
-    val isLoadingHistory: Boolean = false
+    val isLoadingHistory: Boolean = false,
+    val agentEmoji: String? = null,
+    val agentName: String? = null
 )
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val gatewayClient: GatewayClient,
+    private val agentsRepository: AgentsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -44,6 +48,7 @@ class ChatViewModel @Inject constructor(
     
     init {
         loadMessages()
+        loadAgentInfo()
         observeStreamEvents()
     }
     
@@ -60,6 +65,20 @@ class ChatViewModel @Inject constructor(
         // 同步历史
         viewModelScope.launch {
             chatRepository.syncHistory(sessionKey)
+        }
+    }
+    
+    private fun loadAgentInfo() {
+        viewModelScope.launch {
+            agentsRepository.getAgents()
+                .onSuccess { agents ->
+                    // 获取第一个 agent（通常是 main）
+                    val agent = agents.firstOrNull()
+                    _uiState.value = _uiState.value.copy(
+                        agentEmoji = agent?.identity?.emoji,
+                        agentName = agent?.identity?.name ?: agent?.name ?: agent?.id
+                    )
+                }
         }
     }
     
