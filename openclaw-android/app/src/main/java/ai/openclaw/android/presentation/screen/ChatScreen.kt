@@ -53,7 +53,6 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     
     // Speech recognizer state
@@ -168,12 +167,18 @@ fun ChatScreen(
         )
     }
     
-    // Auto-scroll to bottom when new message arrives
-    LaunchedEffect(uiState.messages.size) {
+    // Auto-scroll to bottom when entering chat or new message arrives
+    LaunchedEffect(Unit, uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
-            coroutineScope.launch {
-                listState.animateScrollToItem(uiState.messages.size - 1)
-            }
+            // Scroll to bottom immediately on first load, animate on new messages
+            listState.scrollToItem(uiState.messages.size - 1)
+        }
+    }
+    
+    // Scroll to bottom on new message during streaming
+    LaunchedEffect(uiState.messages.lastOrNull()?.content) {
+        if (uiState.messages.isNotEmpty() && uiState.isStreaming) {
+            listState.scrollToItem(uiState.messages.size - 1)
         }
     }
     

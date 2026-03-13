@@ -4,6 +4,7 @@ import ai.openclaw.android.core.network.ConnectionState
 import ai.openclaw.android.core.network.GatewayClient
 import ai.openclaw.android.data.repository.AgentsRepository
 import ai.openclaw.android.data.repository.ChatRepository
+import ai.openclaw.android.data.repository.DraftRepository
 import ai.openclaw.android.data.repository.SessionRepository
 import ai.openclaw.android.domain.model.Message
 import android.net.Uri
@@ -45,6 +46,7 @@ class ChatViewModel @Inject constructor(
     private val gatewayClient: GatewayClient,
     private val agentsRepository: AgentsRepository,
     private val sessionRepository: SessionRepository,
+    private val draftRepository: DraftRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -59,6 +61,14 @@ class ChatViewModel @Inject constructor(
         observeStreamEvents()
         observeConnectionState()
         observeCurrentAgent()
+        restoreDraft()
+    }
+    
+    private fun restoreDraft() {
+        val draft = draftRepository.getDraft(sessionKey)
+        if (draft.isNotEmpty()) {
+            _uiState.value = _uiState.value.copy(inputText = draft)
+        }
     }
     
     private fun loadMessages() {
@@ -153,6 +163,7 @@ class ChatViewModel @Inject constructor(
     
     fun updateInputText(text: String) {
         _uiState.value = _uiState.value.copy(inputText = text)
+        draftRepository.saveDraft(sessionKey, text)
     }
     
     fun sendMessage() {
@@ -164,6 +175,9 @@ class ChatViewModel @Inject constructor(
                 isSending = true,
                 inputText = ""
             )
+            
+            // 清除草稿
+            draftRepository.clearDraft(sessionKey)
             
             chatRepository.sendMessage(sessionKey, text)
                 .onSuccess { runId ->
