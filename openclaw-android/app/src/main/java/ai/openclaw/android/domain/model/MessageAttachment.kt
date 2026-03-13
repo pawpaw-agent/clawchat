@@ -1,6 +1,7 @@
 package ai.openclaw.android.domain.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
 /**
@@ -77,7 +78,7 @@ data class MessageAttachment(
          */
         fun serializeList(attachments: List<MessageAttachment>?): String? {
             if (attachments.isNullOrEmpty()) return null
-            return json.encodeToString(attachments)
+            return json.encodeToString(ListSerializer(serializer()), attachments)
         }
     }
 }
