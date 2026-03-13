@@ -115,6 +115,7 @@ class ChatViewModel @Inject constructor(
                     is ConnectionState.Connected -> true to null
                     is ConnectionState.Connecting -> false to "Connecting..."
                     is ConnectionState.ChallengeReceived -> false to "Authenticating..."
+                    is ConnectionState.Authenticating -> false to "Authenticating..."
                     is ConnectionState.Disconnected -> false to "Offline"
                     is ConnectionState.Error -> false to "Connection Error"
                 }
