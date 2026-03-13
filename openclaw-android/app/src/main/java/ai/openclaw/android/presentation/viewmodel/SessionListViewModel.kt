@@ -87,6 +87,15 @@ class SessionListViewModel @Inject constructor(
         }
     }
     
+    fun resetSession(key: String) {
+        viewModelScope.launch {
+            sessionRepository.resetSession(key)
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(error = error.message)
+                }
+        }
+    }
+    
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }

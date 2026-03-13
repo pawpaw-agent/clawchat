@@ -111,6 +111,10 @@
     <string name="sessions_delete_desc">此操作无法撤销。</string>
     <string name="sessions_delete">删除</string>
     <string name="sessions_label_optional">标签（可选）</string>
+    <string name="sessions_more_options">更多选项</string>
+    <string name="sessions_reset">重置</string>
+    <string name="sessions_reset_title">重置会话？</string>
+    <string name="sessions_reset_desc">这将清空该会话的所有消息，会话本身将保留。</string>
     
     <!-- Channel List Screen -->
     <string name="channels_title">渠道</string>

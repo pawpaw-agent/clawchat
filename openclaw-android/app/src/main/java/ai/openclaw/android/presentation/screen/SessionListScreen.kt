@@ -93,7 +93,8 @@ fun SessionListScreen(
                         SessionItem(
                             session = session,
                             onClick = { onNavigateToChat(session.key) },
-                            onDelete = { viewModel.deleteSession(session.key) }
+                            onDelete = { viewModel.deleteSession(session.key) },
+                            onReset = { viewModel.resetSession(session.key) }
                         )
                     }
                 }
@@ -136,9 +137,12 @@ fun SessionListScreen(
 private fun SessionItem(
     session: Session,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onReset: () -> Unit
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showResetConfirm by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
     
     Card(
         modifier = Modifier
@@ -196,13 +200,48 @@ private fun SessionItem(
                 )
             }
             
-            // Delete button
-            IconButton(onClick = { showDeleteConfirm = true }) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.sessions_delete),
-                    tint = MaterialTheme.colorScheme.error
-                )
+            // More options menu
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.sessions_more_options)
+                    )
+                }
+                
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.sessions_reset)) },
+                        onClick = {
+                            showMenu = false
+                            showResetConfirm = true
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.sessions_delete)) },
+                        onClick = {
+                            showMenu = false
+                            showDeleteConfirm = true
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    )
+                }
             }
         }
     }
@@ -228,6 +267,30 @@ private fun SessionItem(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(stringResource(R.string.settings_cancel))
+                }
+            }
+        )
+    }
+    
+    // Reset confirmation dialog
+    if (showResetConfirm) {
+        AlertDialog(
+            onDismissRequest = { showResetConfirm = false },
+            title = { Text(stringResource(R.string.sessions_reset_title)) },
+            text = { Text(stringResource(R.string.sessions_reset_desc)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showResetConfirm = false
+                        onReset()
+                    }
+                ) {
+                    Text(stringResource(R.string.sessions_reset))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetConfirm = false }) {
                     Text(stringResource(R.string.settings_cancel))
                 }
             }

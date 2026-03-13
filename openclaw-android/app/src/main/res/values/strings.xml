@@ -112,6 +112,10 @@
     <string name="sessions_delete_desc">This action cannot be undone.</string>
     <string name="sessions_delete">Delete</string>
     <string name="sessions_label_optional">Label (optional)</string>
+    <string name="sessions_more_options">More options</string>
+    <string name="sessions_reset">Reset</string>
+    <string name="sessions_reset_title">Reset session?</string>
+    <string name="sessions_reset_desc">This will clear all messages in this session. The session itself will remain.</string>
     
     <!-- Channel List Screen -->
     <string name="channels_title">Channels</string>
