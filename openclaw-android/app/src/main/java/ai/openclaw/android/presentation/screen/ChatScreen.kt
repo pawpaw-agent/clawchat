@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import ai.openclaw.android.presentation.components.MarkdownText
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -451,10 +452,9 @@ private fun MessageBubble(
                     
                     Spacer(modifier = Modifier.height(4.dp))
                     
-                    // Message content
-                    Text(
+                    // Message content with Markdown rendering
+                    MarkdownText(
                         text = message.content.ifEmpty { "..." },
-                        style = MaterialTheme.typography.bodyMedium,
                         color = if (isUser) {
                             MaterialTheme.colorScheme.onPrimaryContainer
                         } else {
