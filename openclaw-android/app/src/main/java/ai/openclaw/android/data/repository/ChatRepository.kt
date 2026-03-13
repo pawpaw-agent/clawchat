@@ -134,11 +134,11 @@ class ChatRepository @Inject constructor(
         // 2. 转换为 base64
         val base64Image = Base64.encodeToString(compressedImage, Base64.NO_WRAP)
         
-        // 3. 构建附件
+        // 3. 构建附件 (Gateway expects 'content' field for base64 data)
         val attachment = buildJsonObject {
             put("type", "image")
             put("mimeType", "image/jpeg")
-            put("data", "data:image/jpeg;base64,$base64Image")
+            put("content", base64Image)  // Use 'content' not 'data'
         }
         
         // 4. 保存用户消息到本地
