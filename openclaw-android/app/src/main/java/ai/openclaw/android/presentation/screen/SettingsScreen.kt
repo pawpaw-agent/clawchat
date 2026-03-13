@@ -288,7 +288,7 @@ private fun LanguageSelector(
                     modifier = Modifier
                         .fillMaxWidth()
                         .selectable(
-                            selected = false, // Non-functional for now
+                            selected = isSelected,
                             onClick = { onLanguageSelected(code) },
                             role = Role.RadioButton
                         )
@@ -296,7 +296,7 @@ private fun LanguageSelector(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
-                        selected = false,
+                        selected = isSelected,
                         onClick = null
                     )
                     Spacer(modifier = Modifier.width(12.dp))

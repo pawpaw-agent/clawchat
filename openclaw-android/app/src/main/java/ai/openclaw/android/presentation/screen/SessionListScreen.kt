@@ -6,6 +6,7 @@ import ai.openclaw.android.presentation.viewmodel.SessionListViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -27,20 +28,57 @@ fun SessionListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
+    var searchText by remember { mutableStateOf("") }
+    
+    // Filter sessions by search text
+    val filteredSessions = remember(uiState.sessions, searchText) {
+        if (searchText.isBlank()) {
+            uiState.sessions
+        } else {
+            uiState.sessions.filter { session ->
+                session.label?.contains(searchText, ignoreCase = true) == true ||
+                session.key.contains(searchText, ignoreCase = true) ||
+                session.channel?.contains(searchText, ignoreCase = true) == true
+            }
+        }
+    }
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.sessions_title)) },
-                actions = {
-                    IconButton(onClick = { viewModel.syncSessions() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.dashboard_refresh))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+            Column {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.sessions_title)) },
+                    actions = {
+                        IconButton(onClick = { viewModel.syncSessions() }) {
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.dashboard_refresh))
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
                 )
-            )
+                // Search bar
+                OutlinedTextField(
+                    value = searchText,
+                    onValueChange = { searchText = it },
+                    placeholder = { Text(stringResource(R.string.sessions_search_hint)) },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                    },
+                    trailingIcon = {
+                        if (searchText.isNotEmpty()) {
+                            IconButton(onClick = { searchText = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.connect_dismiss))
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    singleLine = true,
+                    shape = RoundedCornerShape(24.dp)
+                )
+            }
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -60,28 +98,30 @@ fun SessionListScreen(
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center)
                 )
-            } else if (uiState.sessions.isEmpty()) {
+            } else if (filteredSessions.isEmpty()) {
                 Column(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        Icons.Default.ChatBubbleOutline,
+                        if (searchText.isNotEmpty()) Icons.Default.SearchOff else Icons.Default.ChatBubbleOutline,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        stringResource(R.string.sessions_no_sessions),
+                        text = if (searchText.isNotEmpty()) stringResource(R.string.sessions_no_results) else stringResource(R.string.sessions_no_sessions),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.outline
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = { showCreateDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.sessions_create))
+                    if (searchText.isEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { showCreateDialog = true }) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.sessions_create))
+                        }
                     }
                 }
             } else {
@@ -89,7 +129,7 @@ fun SessionListScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
-                    items(uiState.sessions, key = { it.key }) { session ->
+                    items(filteredSessions, key = { it.key }) { session ->
                         SessionItem(
                             session = session,
                             onClick = { onNavigateToChat(session.key) },

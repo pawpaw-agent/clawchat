@@ -114,6 +114,8 @@
     <string name="sessions_title">会话</string>
     <string name="sessions_new">新会话</string>
     <string name="sessions_no_sessions">暂无会话</string>
+    <string name="sessions_no_results">未找到匹配的会话</string>
+    <string name="sessions_search_hint">搜索会话…</string>
     <string name="sessions_create">创建会话</string>
     <string name="sessions_messages">条消息</string>
     <string name="sessions_just_now">刚刚</string>

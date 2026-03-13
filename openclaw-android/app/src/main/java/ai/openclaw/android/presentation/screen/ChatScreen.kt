@@ -31,6 +31,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -39,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -376,7 +379,8 @@ fun ChatScreen(
                     } else {
                         audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     }
-                }
+                },
+                shouldFocus = true
             )
         }
     }
@@ -416,7 +420,7 @@ private fun MessageBubble(
                     }
                 ),
                 modifier = Modifier
-                    .widthIn(max = 320.dp)
+                    .fillMaxWidth(0.85f)
                     .clip(
                         RoundedCornerShape(
                             topStart = 16.dp,
@@ -455,6 +459,20 @@ private fun MessageBubble(
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         }
+                    )
+                    
+                    // Timestamp
+                    Text(
+                        text = formatMessageTime(message.timestamp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isUser) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        },
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .align(Alignment.End)
                     )
                     
                     // Streaming indicator
@@ -540,8 +558,19 @@ private fun MessageInput(
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
     onAttach: () -> Unit = {},
-    onMicClick: () -> Unit = {}
+    onMicClick: () -> Unit = {},
+    shouldFocus: Boolean = false
 ) {
+    val focusRequester = remember { FocusRequester() }
+    
+    // Auto-focus when entering chat screen
+    LaunchedEffect(shouldFocus) {
+        if (shouldFocus) {
+            kotlinx.coroutines.delay(300)
+            focusRequester.requestFocus()
+        }
+    }
+    
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shadowElevation = 8.dp
@@ -563,7 +592,9 @@ private fun MessageInput(
             TextField(
                 value = text,
                 onValueChange = onTextChange,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester),
                 placeholder = { Text(stringResource(R.string.chat_input_hint)) },
                 maxLines = 4,
                 colors = TextFieldDefaults.colors(
@@ -615,6 +646,40 @@ private fun MessageInput(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Format message timestamp to readable time
+ */
+@Composable
+private fun formatMessageTime(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = timestamp
+    
+    val messageCalendar = Calendar.getInstance()
+    messageCalendar.timeInMillis = timestamp
+    
+    return when {
+        // Today - show time only
+        calendar.get(Calendar.YEAR) == messageCalendar.get(Calendar.YEAR) &&
+        calendar.get(Calendar.DAY_OF_YEAR) == messageCalendar.get(Calendar.DAY_OF_YEAR) -> {
+            SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
+        }
+        // Yesterday
+        calendar.get(Calendar.YEAR) == messageCalendar.get(Calendar.YEAR) &&
+        calendar.get(Calendar.DAY_OF_YEAR) - messageCalendar.get(Calendar.DAY_OF_YEAR) == 1 -> {
+            "Yesterday " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
+        }
+        // Same year
+        calendar.get(Calendar.YEAR) == messageCalendar.get(Calendar.YEAR) -> {
+            SimpleDateFormat("MMM dd HH:mm", Locale.getDefault()).format(Date(timestamp))
+        }
+        // Different year
+        else -> {
+            SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(Date(timestamp))
         }
     }
 }

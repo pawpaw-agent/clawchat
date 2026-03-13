@@ -115,6 +115,8 @@
     <string name="sessions_title">Sessions</string>
     <string name="sessions_new">New session</string>
     <string name="sessions_no_sessions">No sessions yet</string>
+    <string name="sessions_no_results">No matching sessions</string>
+    <string name="sessions_search_hint">Search sessions…</string>
     <string name="sessions_create">Create session</string>
     <string name="sessions_messages">messages</string>
     <string name="sessions_just_now">Just now</string>
