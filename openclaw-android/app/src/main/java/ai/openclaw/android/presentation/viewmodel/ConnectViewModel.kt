@@ -3,6 +3,7 @@ package ai.openclaw.android.presentation.viewmodel
 import ai.openclaw.android.core.network.ConnectionState
 import ai.openclaw.android.core.network.GatewayClient
 import ai.openclaw.android.core.network.model.HelloOk
+import ai.openclaw.android.data.local.CredentialsStorage
 import ai.openclaw.android.data.repository.AuthRepository
 import ai.openclaw.android.data.repository.AuthState
 import ai.openclaw.android.data.repository.PairingState
@@ -33,7 +34,8 @@ data class ConnectUiState(
 @HiltViewModel
 class ConnectViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val gatewayClient: GatewayClient
+    private val gatewayClient: GatewayClient,
+    private val credentialsStorage: CredentialsStorage
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ConnectUiState())
@@ -93,6 +95,8 @@ class ConnectViewModel @Inject constructor(
                             helloOk = state.helloOk,
                             errorMessage = null
                         )
+                        // 保存凭证
+                        saveCredentials()
                     }
                     is AuthState.Error -> {
                         _uiState.value = _uiState.value.copy(
@@ -108,7 +112,24 @@ class ConnectViewModel @Inject constructor(
 
     private fun loadSavedCredentials() {
         viewModelScope.launch {
-            // TODO: Load saved URL and token from storage
+            val savedUrl = credentialsStorage.getGatewayUrl()
+            val savedToken = credentialsStorage.getToken()
+            
+            if (!savedUrl.isNullOrBlank()) {
+                _uiState.value = _uiState.value.copy(
+                    gatewayUrl = savedUrl,
+                    token = savedToken ?: ""
+                )
+            }
+        }
+    }
+    
+    private fun saveCredentials() {
+        val url = _uiState.value.gatewayUrl.trim()
+        val token = _uiState.value.token.trim()
+        
+        if (url.isNotBlank()) {
+            credentialsStorage.saveCredentials(url, token.ifBlank { null })
         }
     }
 
@@ -135,6 +156,14 @@ class ConnectViewModel @Inject constructor(
 
     fun disconnect() {
         authRepository.disconnect()
+    }
+    
+    fun forgetCredentials() {
+        credentialsStorage.clearCredentials()
+        _uiState.value = _uiState.value.copy(
+            gatewayUrl = "",
+            token = ""
+        )
     }
 
     fun clearError() {

@@ -438,7 +438,7 @@ private fun MessageEntity.toDomain() = Message(
     isStreaming = isStreaming,
     runId = runId,
     error = error,
-    attachments = null // TODO: Parse from JSON
+    attachments = MessageAttachment.parseList(attachments)
 )
 
 private fun Message.toEntity() = MessageEntity(
@@ -455,5 +455,5 @@ private fun Message.toEntity() = MessageEntity(
     isStreaming = isStreaming,
     runId = runId,
     error = error,
-    attachments = null // TODO: Serialize to JSON
+    attachments = MessageAttachment.serializeList(attachments)
 )

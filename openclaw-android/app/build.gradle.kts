@@ -101,6 +101,7 @@ dependencies {
     // Security
     implementation(libs.tink)
     implementation("org.bouncycastle:bcprov-jdk18on:1.77")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
