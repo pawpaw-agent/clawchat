@@ -3,6 +3,7 @@ package ai.openclaw.android.presentation.screen
 import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.ChannelConnectionStatus
 import ai.openclaw.android.domain.model.ChannelStatus
+import ai.openclaw.android.presentation.theme.StatusColors
 import ai.openclaw.android.presentation.viewmodel.ChannelListViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -242,11 +242,11 @@ private fun ChannelItem(
 @Composable
 private fun StatusIndicator(status: ChannelConnectionStatus) {
     val color = when (status) {
-        ChannelConnectionStatus.CONNECTED -> Color(0xFF4CAF50)
-        ChannelConnectionStatus.CONNECTING -> Color(0xFFFFC107)
-        ChannelConnectionStatus.ERROR -> Color(0xFFF44336)
-        ChannelConnectionStatus.NEEDS_QR, ChannelConnectionStatus.NEEDS_LOGIN -> Color(0xFFFF9800)
-        ChannelConnectionStatus.DISCONNECTED -> Color(0xFF9E9E9E)
+        ChannelConnectionStatus.CONNECTED -> StatusColors.Connected
+        ChannelConnectionStatus.CONNECTING -> StatusColors.Connecting
+        ChannelConnectionStatus.ERROR -> StatusColors.Error
+        ChannelConnectionStatus.NEEDS_QR, ChannelConnectionStatus.NEEDS_LOGIN -> StatusColors.Warning
+        ChannelConnectionStatus.DISCONNECTED -> StatusColors.Disconnected
     }
     
     Surface(

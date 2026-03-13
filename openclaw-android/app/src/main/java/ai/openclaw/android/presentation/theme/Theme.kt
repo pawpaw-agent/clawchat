@@ -30,6 +30,23 @@ enum class ThemeMode {
 }
 
 /**
+ * 状态颜色（深色模式友好）
+ */
+object StatusColors {
+    // 连接状态颜色
+    val Connected = Color(0xFF4CAF50)
+    val Connecting = Color(0xFFFFC107)
+    val Error = Color(0xFFF44336)
+    val Warning = Color(0xFFFF9800)
+    val Disconnected = Color(0xFF9E9E9E)
+    
+    // 审批风险颜色
+    val RiskHigh = Color(0xFFEF5350)
+    val RiskMedium = Color(0xFFFFA726)
+    val RiskLow = Color(0xFF66BB6A)
+}
+
+/**
  * 主题设置 ViewModel
  */
 @HiltViewModel
