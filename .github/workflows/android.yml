@@ -8,7 +8,6 @@ on:
   workflow_dispatch:
 
 env:
-  # Use Node.js 24 for GitHub Actions
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -28,28 +27,33 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
-    # 恢复缓存的 keystore（签名一致性）
-    - name: Restore keystore from cache
-      id: cache-keystore
-      uses: actions/cache@v4
-      with:
-        path: openclaw-android/keystores/debug.keystore
-        key: debug-keystore-v1
-
-    # 仅在缓存未命中时生成 keystore
-    - name: Generate debug keystore
-      if: steps.cache-keystore.outputs.cache-hit != 'true'
+    # 从 GitHub Secrets 恢复 keystore（永久存储）
+    - name: Restore keystore from Secrets
+      env:
+        DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
       run: |
         mkdir -p openclaw-android/keystores
-        keytool -genkey -v \
-          -keystore openclaw-android/keystores/debug.keystore \
-          -storepass android \
-          -alias androiddebugkey \
-          -keypass android \
-          -keyalg RSA \
-          -keysize 2048 \
-          -validity 10000 \
-          -dname "CN=Clawchat Debug,O=OpenClaw,C=CN"
+        if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
+          echo "Restoring keystore from GitHub Secrets..."
+          echo "$DEBUG_KEYSTORE_BASE64" | base64 -d > openclaw-android/keystores/debug.keystore
+          echo "KEYSTORE_SOURCE=secrets" >> $GITHUB_ENV
+        else
+          echo "No keystore in Secrets, generating new one..."
+          keytool -genkey -v \
+            -keystore openclaw-android/keystores/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Clawchat Debug,O=OpenClaw,C=CN"
+          echo "KEYSTORE_SOURCE=generated" >> $GITHUB_ENV
+          # 输出 base64 方便用户添加到 Secrets
+          echo "::notice::To persist keystore, add this to GitHub Secrets (DEBUG_KEYSTORE_BASE64):"
+          cat openclaw-android/keystores/debug.keystore | base64 -w 0 | head -c 100
+          echo "..."
+        fi
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew || true
