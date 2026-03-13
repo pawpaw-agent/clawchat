@@ -152,4 +152,11 @@
     
     <!-- Channel List Screen -->
     <string name="channels_qr_placeholder">QR Code</string>
+    
+    <!-- Model Settings -->
+    <string name="settings_model">Model</string>
+    <string name="settings_model_selector">AI Model</string>
+    <string name="settings_model_loading">Loading models…</string>
+    <string name="settings_model_empty">No models available</string>
+    <string name="settings_model_context">%dk context</string>
 </resources>

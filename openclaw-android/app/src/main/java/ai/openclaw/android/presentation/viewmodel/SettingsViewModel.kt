@@ -1,7 +1,10 @@
 package ai.openclaw.android.presentation.viewmodel
 
 import ai.openclaw.android.data.repository.GatewayConfigRepository
+import ai.openclaw.android.data.repository.ModelsRepository
+import ai.openclaw.android.data.repository.SessionRepository
 import ai.openclaw.android.domain.model.GatewayConfig
+import ai.openclaw.android.domain.model.ModelInfo
 import ai.openclaw.android.presentation.theme.ThemeMode
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -18,13 +21,18 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val notificationsEnabled: Boolean = true,
     val autoReconnect: Boolean = true,
+    val models: List<ModelInfo> = emptyList(),
+    val currentModel: String? = null,
     val isLoading: Boolean = false,
+    val isLoadingModels: Boolean = false,
     val error: String? = null
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val gatewayConfigRepository: GatewayConfigRepository
+    private val gatewayConfigRepository: GatewayConfigRepository,
+    private val modelsRepository: ModelsRepository,
+    private val sessionRepository: SessionRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -32,6 +40,7 @@ class SettingsViewModel @Inject constructor(
     
     init {
         loadSettings()
+        loadModels()
     }
     
     private fun loadSettings() {
@@ -46,6 +55,33 @@ class SettingsViewModel @Inject constructor(
                 )
             }
         }
+        
+        // 加载当前会话的模型
+        viewModelScope.launch {
+            sessionRepository.getSessionByKey("main")?.let { session ->
+                _uiState.value = _uiState.value.copy(currentModel = session.model)
+            }
+        }
+    }
+    
+    private fun loadModels() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingModels = true)
+            
+            modelsRepository.getModels()
+                .onSuccess { models ->
+                    _uiState.value = _uiState.value.copy(
+                        models = models,
+                        isLoadingModels = false
+                    )
+                }
+                .onFailure {
+                    _uiState.value = _uiState.value.copy(
+                        isLoadingModels = false,
+                        error = "Failed to load models: ${it.message}"
+                    )
+                }
+        }
     }
     
     fun setThemeMode(mode: ThemeMode) {
@@ -58,6 +94,20 @@ class SettingsViewModel @Inject constructor(
     
     fun setAutoReconnect(enabled: Boolean) {
         _uiState.value = _uiState.value.copy(autoReconnect = enabled)
+    }
+    
+    fun setModel(modelId: String) {
+        viewModelScope.launch {
+            sessionRepository.patchSession("main", model = modelId)
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(currentModel = modelId)
+                }
+                .onFailure {
+                    _uiState.value = _uiState.value.copy(
+                        error = "Failed to set model: ${it.message}"
+                    )
+                }
+        }
     }
     
     fun addGatewayConfig(name: String, url: String, token: String?) {
