@@ -28,6 +28,20 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
+    # 生成固定的 debug keystore（确保每次构建签名一致）
+    - name: Generate debug keystore
+      run: |
+        mkdir -p openclaw-android/keystores
+        keytool -genkey -v \
+          -keystore openclaw-android/keystores/debug.keystore \
+          -storepass android \
+          -alias androiddebugkey \
+          -keypass android \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 10000 \
+          -dname "CN=Clawchat Debug,O=OpenClaw,C=CN"
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew || true
       working-directory: openclaw-android

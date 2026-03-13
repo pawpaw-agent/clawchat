@@ -6,6 +6,13 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// 签名配置：优先从环境变量读取，否则使用默认 debug keystore
+val keystoreFile = file("../keystores/debug.keystore")
+val useCustomKeystore = keystoreFile.exists()
+val keystorePassword = System.getenv("KEYSTORE_PASSWORD") ?: "android"
+val keyAlias = System.getenv("KEY_ALIAS") ?: "androiddebugkey"
+val keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
+
 android {
     namespace = "ai.openclaw.android"
     compileSdk = 34
@@ -23,6 +30,25 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            if (useCustomKeystore) {
+                storeFile = keystoreFile
+                storePassword = keystorePassword
+                keyAlias = keyAlias
+                keyPassword = keyPassword
+            }
+        }
+        getByName("debug") {
+            if (useCustomKeystore) {
+                storeFile = keystoreFile
+                storePassword = keystorePassword
+                keyAlias = keyAlias
+                keyPassword = keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -30,9 +56,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (useCustomKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             isMinifyEnabled = false
+            if (useCustomKeystore) {
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
 
