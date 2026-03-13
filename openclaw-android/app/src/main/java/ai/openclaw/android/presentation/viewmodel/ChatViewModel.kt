@@ -5,6 +5,7 @@ import ai.openclaw.android.core.network.GatewayClient
 import ai.openclaw.android.data.repository.AgentsRepository
 import ai.openclaw.android.data.repository.ChatRepository
 import ai.openclaw.android.domain.model.Message
+import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -32,7 +33,8 @@ data class ChatUiState(
     val agentEmoji: String? = null,
     val agentName: String? = null,
     val isOnline: Boolean = true,
-    val connectionStatus: String? = null
+    val connectionStatus: String? = null,
+    val pendingImageUri: Uri? = null
 )
 
 @HiltViewModel
@@ -155,6 +157,40 @@ class ChatViewModel @Inject constructor(
                     )
                 }
         }
+    }
+    
+    fun sendImageMessage(uri: Uri) {
+        val text = _uiState.value.inputText.trim()
+        
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isSending = true,
+                inputText = "",
+                pendingImageUri = null
+            )
+            
+            chatRepository.sendMessageWithImage(sessionKey, text.ifEmpty { "请分析这张图片" }, uri)
+                .onSuccess { runId ->
+                    _uiState.value = _uiState.value.copy(
+                        isSending = false,
+                        currentRunId = runId
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isSending = false,
+                        error = error.message
+                    )
+                }
+        }
+    }
+    
+    fun setPendingImage(uri: Uri) {
+        _uiState.value = _uiState.value.copy(pendingImageUri = uri)
+    }
+    
+    fun clearPendingImage() {
+        _uiState.value = _uiState.value.copy(pendingImageUri = null)
     }
     
     fun abort() {

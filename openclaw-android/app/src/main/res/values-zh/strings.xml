@@ -92,6 +92,9 @@
     <string name="chat_offline">离线 - 查看缓存消息</string>
     <string name="chat_attach">添加附件</string>
     <string name="chat_image_selected">已选择图片</string>
+    <string name="chat_send_image">发送图片</string>
+    <string name="chat_send_image_desc">发送这张图片？</string>
+    <string name="chat_sending_image">发送图片中…</string>
     
     <!-- Approval Screen -->
     <string name="approvals_title">审批</string>

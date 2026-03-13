@@ -93,6 +93,9 @@
     <string name="chat_offline">Offline - viewing cached messages</string>
     <string name="chat_attach">Attach file</string>
     <string name="chat_image_selected">Image selected</string>
+    <string name="chat_send_image">Send Image</string>
+    <string name="chat_send_image_desc">Send this image with your message?</string>
+    <string name="chat_sending_image">Sending image…</string>
     
     <!-- Approval Screen -->
     <string name="approvals_title">Approvals</string>

@@ -5,10 +5,20 @@ import ai.openclaw.android.data.local.dao.MessageDao
 import ai.openclaw.android.data.local.dao.SessionDao
 import ai.openclaw.android.data.local.entity.MessageEntity
 import ai.openclaw.android.domain.model.Message
+import ai.openclaw.android.domain.model.MessageAttachment
 import ai.openclaw.android.domain.model.MessageRole
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
+import java.io.ByteArrayOutputStream
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,7 +31,9 @@ class ChatRepository @Inject constructor(
     private val messageDao: MessageDao,
     private val sessionDao: SessionDao,
     private val gatewayClient: GatewayClient,
-    private val json: Json
+    private val json: Json,
+    @android.annotation.SuppressLint("StaticFieldLeak")
+    private val context: Context
 ) {
     /**
      * 获取会话消息流
@@ -102,6 +114,106 @@ class ChatRepository @Inject constructor(
             )
             
             runId
+        }
+    }
+    
+    /**
+     * 发送带图片的消息
+     */
+    suspend fun sendMessageWithImage(
+        sessionKey: String,
+        content: String,
+        imageUri: Uri
+    ): Result<String> = withContext(Dispatchers.IO) {
+        // 1. 压缩图片
+        val compressedImage = compressImage(imageUri)
+        if (compressedImage == null) {
+            return@withContext Result.failure(Exception("Failed to compress image"))
+        }
+        
+        // 2. 转换为 base64
+        val base64Image = Base64.encodeToString(compressedImage, Base64.NO_WRAP)
+        
+        // 3. 构建附件
+        val attachment = buildJsonObject {
+            put("type", "image")
+            put("mimeType", "image/jpeg")
+            put("data", "data:image/jpeg;base64,$base64Image")
+        }
+        
+        // 4. 保存用户消息到本地
+        val userMessageId = UUID.randomUUID().toString()
+        val userMessage = MessageEntity(
+            id = userMessageId,
+            sessionKey = sessionKey,
+            role = "user",
+            content = content,
+            timestamp = System.currentTimeMillis(),
+            attachments = json.encodeToString(listOf(
+                mapOf("type" to "image", "mimeType" to "image/jpeg")
+            ))
+        )
+        messageDao.insertMessage(userMessage)
+        
+        // 5. 创建占位的助手消息
+        val assistantMessageId = UUID.randomUUID().toString()
+        val assistantMessage = MessageEntity(
+            id = assistantMessageId,
+            sessionKey = sessionKey,
+            role = "assistant",
+            content = "",
+            timestamp = System.currentTimeMillis(),
+            isStreaming = true
+        )
+        messageDao.insertMessage(assistantMessage)
+        
+        // 6. 发送到服务器
+        val actualSessionKey = if (sessionKey.isBlank()) "main" else sessionKey
+        val idempotencyKey = UUID.randomUUID().toString()
+        val params = buildJsonObject {
+            put("sessionKey", actualSessionKey)
+            put("message", content)
+            put("idempotencyKey", idempotencyKey)
+            put("attachments", buildJsonArray { add(attachment) })
+        }
+        
+        val result = gatewayClient.request("chat.send", params)
+        
+        result.map { response ->
+            val runId = response["runId"]?.jsonPrimitive?.content ?: ""
+            messageDao.updateMessage(assistantMessage.copy(runId = runId))
+            runId
+        }
+    }
+    
+    /**
+     * 压缩图片
+     */
+    private fun compressImage(uri: Uri, maxSizeKB: Int = 500): ByteArray? {
+        return try {
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+            val bitmap = BitmapFactory.decodeStream(inputStream)
+            inputStream.close()
+            
+            // 计算压缩质量
+            var quality = 90
+            var compressedBytes: ByteArray
+            val outputStream = ByteArrayOutputStream()
+            
+            do {
+                outputStream.reset()
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+                compressedBytes = outputStream.toByteArray()
+                quality -= 10
+            } while (compressedBytes.size > maxSizeKB * 1024 && quality > 10)
+            
+            outputStream.close()
+            bitmap.recycle()
+            
+            compressedBytes
+        } catch (e: Exception) {
+            android.util.Log.e("ChatRepository", "Failed to compress image", e)
+            null
         }
     }
     

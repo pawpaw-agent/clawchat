@@ -84,8 +84,9 @@ object AppModule {
         messageDao: MessageDao,
         sessionDao: SessionDao,
         gatewayClient: GatewayClient,
-        json: Json
-    ): ChatRepository = ChatRepository(messageDao, sessionDao, gatewayClient, json)
+        json: Json,
+        @ApplicationContext context: Context
+    ): ChatRepository = ChatRepository(messageDao, sessionDao, gatewayClient, json, context)
 
     @Provides
     @Singleton

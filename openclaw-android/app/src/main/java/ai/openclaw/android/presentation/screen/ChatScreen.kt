@@ -48,10 +48,35 @@ fun ChatScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         uri?.let {
-            // Handle selected image
-            Toast.makeText(context, "Image selected: ${it.lastPathSegment}", Toast.LENGTH_SHORT).show()
-            // TODO: Implement image upload and sending
+            viewModel.sendImageMessage(it)
         }
+    }
+    
+    // Pending image preview dialog
+    if (uiState.pendingImageUri != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearPendingImage() },
+            title = { Text(stringResource(R.string.chat_send_image)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.chat_send_image_desc))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    // Image preview would go here
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    uiState.pendingImageUri?.let { viewModel.sendImageMessage(it) }
+                }) {
+                    Text(stringResource(R.string.chat_send))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.clearPendingImage() }) {
+                    Text(stringResource(R.string.settings_cancel))
+                }
+            }
+        )
     }
     
     // Auto-scroll to bottom when new message arrives
