@@ -45,40 +45,17 @@ fun SessionListScreen(
     
     Scaffold(
         topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.sessions_title)) },
-                    actions = {
-                        IconButton(onClick = { viewModel.syncSessions() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.dashboard_refresh))
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+            TopAppBar(
+                title = { Text(stringResource(R.string.sessions_title)) },
+                actions = {
+                    IconButton(onClick = { viewModel.syncSessions() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.dashboard_refresh))
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
-                // Search bar
-                OutlinedTextField(
-                    value = searchText,
-                    onValueChange = { searchText = it },
-                    placeholder = { Text(stringResource(R.string.sessions_search_hint)) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null)
-                    },
-                    trailingIcon = {
-                        if (searchText.isNotEmpty()) {
-                            IconButton(onClick = { searchText = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.connect_dismiss))
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    singleLine = true,
-                    shape = RoundedCornerShape(24.dp)
-                )
-            }
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -89,64 +66,89 @@ fun SessionListScreen(
             }
         }
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (uiState.isLoading && uiState.sessions.isEmpty()) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else if (filteredSessions.isEmpty()) {
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        if (searchText.isNotEmpty()) Icons.Default.SearchOff else Icons.Default.ChatBubbleOutline,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.outline
+            // Search bar - placed in content area for better layout
+            OutlinedTextField(
+                value = searchText,
+                onValueChange = { searchText = it },
+                placeholder = { Text(stringResource(R.string.sessions_search_hint)) },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                },
+                trailingIcon = {
+                    if (searchText.isNotEmpty()) {
+                        IconButton(onClick = { searchText = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.connect_dismiss))
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                singleLine = true,
+                shape = RoundedCornerShape(24.dp)
+            )
+            
+            // Session list
+            Box(modifier = Modifier.weight(1f)) {
+                if (uiState.isLoading && uiState.sessions.isEmpty()) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = if (searchText.isNotEmpty()) stringResource(R.string.sessions_no_results) else stringResource(R.string.sessions_no_sessions),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                    if (searchText.isEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { showCreateDialog = true }) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.sessions_create))
+                } else if (filteredSessions.isEmpty()) {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            if (searchText.isNotEmpty()) Icons.Default.SearchOff else Icons.Default.ChatBubbleOutline,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = if (searchText.isNotEmpty()) stringResource(R.string.sessions_no_results) else stringResource(R.string.sessions_no_sessions),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                        if (searchText.isEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { showCreateDialog = true }) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.sessions_create))
+                            }
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        items(filteredSessions, key = { it.key }) { session ->
+                            SessionItem(
+                                session = session,
+                                onClick = { onNavigateToChat(session.key) },
+                                onDelete = { viewModel.deleteSession(session.key) },
+                                onReset = { viewModel.resetSession(session.key) }
+                            )
                         }
                     }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 8.dp)
-                ) {
-                    items(filteredSessions, key = { it.key }) { session ->
-                        SessionItem(
-                            session = session,
-                            onClick = { onNavigateToChat(session.key) },
-                            onDelete = { viewModel.deleteSession(session.key) },
-                            onReset = { viewModel.resetSession(session.key) }
-                        )
-                    }
+                
+                // Pull-to-refresh indicator
+                if (uiState.isRefreshing) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
+                    )
                 }
-            }
-            
-            // Pull-to-refresh indicator
-            if (uiState.isRefreshing) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                )
             }
         }
     }
