@@ -31,5 +31,6 @@ data class MessageEntity(
     val toolCalls: String? = null, // JSON string
     val toolOutputs: String? = null, // JSON string
     val isStreaming: Boolean = false,
-    val runId: String? = null
+    val runId: String? = null,
+    val error: String? = null // 错误信息
 )

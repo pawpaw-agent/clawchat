@@ -12,7 +12,8 @@ data class Message(
     val thinking: String? = null,
     val toolCalls: List<ToolCall>? = null,
     val isStreaming: Boolean = false,
-    val runId: String? = null
+    val runId: String? = null,
+    val error: String? = null
 )
 
 /**

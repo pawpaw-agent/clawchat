@@ -254,12 +254,32 @@ class ChatRepository @Inject constructor(
                     "delta" -> {
                         // 增量更新：从 message 中提取内容
                         val content = message?.let { extractMessageContent(it) } ?: ""
-                        // 查找并更新正在流式的消息
-                        messageDao.updateStreamingMessageContent(runId, content, true)
+                        // 查找并更新正在流式的消息，如果不存在则创建
+                        val existingMessage = messageDao.getMessageByRunId(runId)
+                        if (existingMessage == null) {
+                            // 创建新的流式消息
+                            val newMessage = MessageEntity(
+                                id = UUID.randomUUID().toString(),
+                                sessionKey = payload["sessionKey"]?.jsonPrimitive?.content ?: "main",
+                                role = "assistant",
+                                content = content,
+                                timestamp = System.currentTimeMillis(),
+                                isStreaming = true,
+                                runId = runId
+                            )
+                            messageDao.insertMessage(newMessage)
+                        } else {
+                            messageDao.updateStreamingMessageContent(runId, content, true)
+                        }
                     }
                     "final" -> {
-                        // 完成：标记消息为非流式
-                        messageDao.finishStreamingByRunId(runId)
+                        // 完成：更新最终内容并标记消息为非流式
+                        val content = message?.let { extractMessageContent(it) } ?: ""
+                        if (content.isNotBlank()) {
+                            messageDao.updateStreamingMessageContent(runId, content, false)
+                        } else {
+                            messageDao.finishStreamingByRunId(runId)
+                        }
                     }
                     "aborted" -> {
                         // 中止：标记消息为非流式
@@ -268,8 +288,9 @@ class ChatRepository @Inject constructor(
                     }
                     "error" -> {
                         // 错误：标记消息为非流式并记录错误
-                        messageDao.finishStreamingByRunId(runId)
-                        android.util.Log.e("ChatRepository", "Chat error: runId=$runId, error=$errorMessage")
+                        val errorMsg = errorMessage ?: "Unknown error"
+                        messageDao.setErrorByRunId(runId, errorMsg)
+                        android.util.Log.e("ChatRepository", "Chat error: runId=$runId, error=$errorMsg")
                     }
                 }
             }
@@ -296,7 +317,8 @@ private fun MessageEntity.toDomain() = Message(
     timestamp = timestamp,
     thinking = thinking,
     isStreaming = isStreaming,
-    runId = runId
+    runId = runId,
+    error = error
 )
 
 private fun Message.toEntity() = MessageEntity(
@@ -311,5 +333,6 @@ private fun Message.toEntity() = MessageEntity(
     timestamp = timestamp,
     thinking = thinking,
     isStreaming = isStreaming,
-    runId = runId
+    runId = runId,
+    error = error
 )
