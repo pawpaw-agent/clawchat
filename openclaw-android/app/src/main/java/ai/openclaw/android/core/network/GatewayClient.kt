@@ -73,7 +73,14 @@ class GatewayClient @Inject constructor(
             null
         }
         
-        return@withContext sendConnect(signedIdentity, token)
+        val result = sendConnect(signedIdentity, token)
+        
+        // 成功后更新连接状态
+        result.onSuccess { helloOk ->
+            _connectionState.value = ConnectionState.Connected(helloOk)
+        }
+        
+        return@withContext result
     }
 
     private suspend fun waitForChallenge(url: String): Result<Unit> {
