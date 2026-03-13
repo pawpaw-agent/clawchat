@@ -318,7 +318,8 @@ private fun MessageEntity.toDomain() = Message(
     thinking = thinking,
     isStreaming = isStreaming,
     runId = runId,
-    error = error
+    error = error,
+    attachments = null // TODO: Parse from JSON
 )
 
 private fun Message.toEntity() = MessageEntity(
@@ -334,5 +335,6 @@ private fun Message.toEntity() = MessageEntity(
     thinking = thinking,
     isStreaming = isStreaming,
     runId = runId,
-    error = error
+    error = error,
+    attachments = null // TODO: Serialize to JSON
 )

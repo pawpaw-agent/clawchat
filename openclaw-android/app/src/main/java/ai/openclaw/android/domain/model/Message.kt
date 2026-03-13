@@ -13,7 +13,8 @@ data class Message(
     val toolCalls: List<ToolCall>? = null,
     val isStreaming: Boolean = false,
     val runId: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val attachments: List<MessageAttachment>? = null
 )
 
 /**

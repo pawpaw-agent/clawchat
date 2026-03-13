@@ -91,6 +91,8 @@
     <string name="chat_send">Send</string>
     <string name="chat_streaming">streaming…</string>
     <string name="chat_offline">Offline - viewing cached messages</string>
+    <string name="chat_attach">Attach file</string>
+    <string name="chat_image_selected">Image selected</string>
     
     <!-- Approval Screen -->
     <string name="approvals_title">Approvals</string>

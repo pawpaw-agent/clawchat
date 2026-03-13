@@ -4,6 +4,9 @@ import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.Message
 import ai.openclaw.android.domain.model.MessageRole
 import ai.openclaw.android.presentation.viewmodel.ChatViewModel
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -25,6 +28,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +41,18 @@ fun ChatScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let {
+            // Handle selected image
+            Toast.makeText(context, "Image selected: ${it.lastPathSegment}", Toast.LENGTH_SHORT).show()
+            // TODO: Implement image upload and sending
+        }
+    }
     
     // Auto-scroll to bottom when new message arrives
     LaunchedEffect(uiState.messages.size) {
@@ -209,7 +227,12 @@ fun ChatScreen(
                 text = uiState.inputText,
                 isSending = uiState.isSending || uiState.isStreaming,
                 onTextChange = { viewModel.updateInputText(it) },
-                onSend = { viewModel.sendMessage() }
+                onSend = { viewModel.sendMessage() },
+                onAttach = {
+                    imagePickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }
             )
         }
     }
@@ -327,7 +350,8 @@ private fun MessageInput(
     text: String,
     isSending: Boolean,
     onTextChange: (String) -> Unit,
-    onSend: () -> Unit
+    onSend: () -> Unit,
+    onAttach: () -> Unit = {}
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -339,6 +363,14 @@ private fun MessageInput(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Attachment button
+            IconButton(onClick = onAttach) {
+                Icon(
+                    Icons.Default.AttachFile,
+                    contentDescription = stringResource(R.string.chat_attach)
+                )
+            }
+            
             TextField(
                 value = text,
                 onValueChange = onTextChange,
