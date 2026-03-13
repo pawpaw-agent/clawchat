@@ -293,7 +293,11 @@ fun ChatScreen(
                     }
                 }
                 
-                items(uiState.messages, key = { it.id }) { message ->
+                items(
+                    items = uiState.messages,
+                    key = { it.id },
+                    contentType = { if (it.role == MessageRole.USER) "user" else "assistant" }
+                ) { message ->
                     MessageBubble(
                         message = message,
                         onCopy = { text ->
