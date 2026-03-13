@@ -37,7 +37,7 @@ class OpenClawApplication : Application() {
         super.onCreate()
         
         // 注册 App 生命周期观察者
-        appLifecycleObserver.register()
+        appLifecycleObserver.register(this)
         Log.d(TAG, "App lifecycle observer registered")
         
         // 启动审批事件监听
