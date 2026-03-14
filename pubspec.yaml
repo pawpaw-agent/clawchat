@@ -1,0 +1,46 @@
+name: clawchat
+description: OpenClaw Android Client - Mobile companion app for OpenClaw Gateway
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.4.9
+
+  # Network
+  web_socket_channel: ^3.0.1
+  connectivity_plus: ^5.0.2
+
+  # Storage
+  flutter_secure_storage: ^9.0.0
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+
+  # Crypto & Utils
+  uuid: ^4.3.3
+  crypto: ^3.0.3
+  logger: ^2.0.2+1
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+
+  # UI
+  flutter_markdown: ^0.6.18+3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.8
+  freezed: ^2.4.6
+  json_serializable: ^6.7.1
+  isar_generator: ^3.1.0+1
+  mocktail: ^1.0.2
+
+flutter:
+  uses-material-design: true
