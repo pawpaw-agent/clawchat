@@ -75,7 +75,7 @@ class _ConnectionStatus extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // TODO: Get connection state from provider
-    const isConnected = false;
+    final isConnected = false; // ignore: prefer_const_declarations
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
