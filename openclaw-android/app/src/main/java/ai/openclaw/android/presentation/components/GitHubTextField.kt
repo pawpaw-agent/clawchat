@@ -98,9 +98,7 @@ fun GitHubTextField(
             focusedContainerColor = MaterialTheme.colorScheme.surface,
             unfocusedContainerColor = MaterialTheme.colorScheme.surface
         ),
-        textStyle = LocalTextStyle.current.copy(
-            style = MaterialTheme.typography.bodyLarge
-        )
+        textStyle = MaterialTheme.typography.bodyLarge
     )
 }
 
