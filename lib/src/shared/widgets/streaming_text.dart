@@ -26,7 +26,6 @@ class StreamingText extends StatefulWidget {
 
 class _StreamingTextState extends State<StreamingText> {
   String _displayedText = '';
-  int _charIndex = 0;
 
   @override
   void initState() {

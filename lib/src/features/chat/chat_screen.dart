@@ -75,13 +75,13 @@ class _ConnectionStatus extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // TODO: Get connection state from provider
-    final isConnected = false;
+    const isConnected = false;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: isConnected
-          ? Colors.green.withValues(alpha: 0.1)
-          : Colors.orange.withValues(alpha: 0.1),
+          ? Colors.green.withOpacity(0.1)
+          : Colors.orange.withOpacity(0.1),
       child: Row(
         children: [
           Icon(
@@ -163,7 +163,7 @@ class _InputArea extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),

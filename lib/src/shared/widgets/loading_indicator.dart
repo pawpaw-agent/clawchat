@@ -94,7 +94,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
                   width: widget.dotSize,
                   height: widget.dotSize,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.6),
+                    color: color.withOpacity(0.6),
                     shape: BoxShape.circle,
                   ),
                 ),

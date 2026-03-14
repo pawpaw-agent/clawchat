@@ -13,7 +13,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _gatewayUrlController = TextEditingController();
-  bool _isLoading = false;
 
   @override
   void dispose() {

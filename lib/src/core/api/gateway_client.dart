@@ -33,6 +33,7 @@ class GatewayClient {
   
   String? _challengeNonce;
   int _protocol = 3;
+  // ignore: unused_field
   PolicyConfig? _policy;
   String? _deviceToken;
 
