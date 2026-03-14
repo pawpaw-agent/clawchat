@@ -96,7 +96,7 @@ fun ConnectScreen(
                 onValueChange = { viewModel.updateGatewayUrl(it) },
                 label = stringResource(R.string.connect_gateway_url),
                 placeholder = "ws://192.168.1.100:3000/ws",
-                enabled = !uiState.isConnecting && !uiState.isConnected,
+                enabled = !uiState.isConnecting,
                 leadingIcon = {
                     Icon(Icons.Default.Link, contentDescription = null)
                 },
@@ -110,7 +110,7 @@ fun ConnectScreen(
                 onValueChange = { viewModel.updateToken(it) },
                 label = stringResource(R.string.connect_token),
                 placeholder = stringResource(R.string.connect_token_hint),
-                enabled = !uiState.isConnecting && !uiState.isConnected,
+                enabled = !uiState.isConnecting,
                 visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 leadingIcon = {
                     Icon(Icons.Default.Key, contentDescription = null)
@@ -155,6 +155,22 @@ fun ConnectScreen(
                         }
                     }
                 }
+            }
+
+            // 忘记凭证按钮（当有保存的凭证时显示）
+            if (uiState.gatewayUrl.isNotBlank() || uiState.token.isNotBlank()) {
+                GitHubButton(
+                    text = stringResource(R.string.connect_forget_credentials),
+                    onClick = { viewModel.forgetCredentials() },
+                    modifier = Modifier.fillMaxWidth(),
+                    variant = GitHubButtonVariant.GHOST,
+                    enabled = !uiState.isConnecting
+                )
+                Text(
+                    text = stringResource(R.string.connect_forget_credentials_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             // 操作按钮

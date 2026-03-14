@@ -162,6 +162,8 @@
     <string name="connect_dismiss">Dismiss</string>
     <string name="connect_protocol">Protocol:</string>
     <string name="connect_device_token_received">Device token received</string>
+    <string name="connect_forget_credentials">Forget Saved Credentials</string>
+    <string name="connect_forget_credentials_desc">Clear saved Gateway URL and Token. Use this if you cannot connect after an app update.</string>
     
     <!-- Pairing Screen -->
     <string name="pairing_request_id">Request ID:</string>
