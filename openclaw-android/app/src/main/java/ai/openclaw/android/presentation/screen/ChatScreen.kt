@@ -3,6 +3,12 @@ package ai.openclaw.android.presentation.screen
 import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.Message
 import ai.openclaw.android.domain.model.MessageRole
+import ai.openclaw.android.presentation.components.GitHubBadge
+import ai.openclaw.android.presentation.components.GitHubButton
+import ai.openclaw.android.presentation.components.GitHubCard
+import ai.openclaw.android.presentation.components.GitHubTextField
+import ai.openclaw.android.presentation.components.MarkdownText
+import ai.openclaw.android.presentation.theme.GitHubSpacing
 import ai.openclaw.android.presentation.viewmodel.ChatViewModel
 import android.Manifest
 import android.content.pm.PackageManager
@@ -14,7 +20,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -40,7 +45,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import ai.openclaw.android.presentation.components.MarkdownText
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -148,8 +152,7 @@ fun ChatScreen(
             text = {
                 Column {
                     Text(stringResource(R.string.chat_send_image_desc))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    // Image preview would go here
+                    Spacer(modifier = Modifier.height(GitHubSpacing.md))
                 }
             },
             confirmButton = {
@@ -170,7 +173,6 @@ fun ChatScreen(
     // Auto-scroll to bottom when entering chat or new message arrives
     LaunchedEffect(Unit, uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
-            // Scroll to bottom immediately on first load, animate on new messages
             listState.scrollToItem(uiState.messages.size - 1)
         }
     }
@@ -187,15 +189,10 @@ fun ChatScreen(
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Agent emoji
                         uiState.agentEmoji?.let { emoji ->
-                            Text(
-                                text = emoji,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = emoji, style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.width(GitHubSpacing.xs))
                         }
-                        // Agent name or default title
                         Text(
                             text = uiState.agentName ?: stringResource(R.string.chat_title),
                             maxLines = 1,
@@ -211,16 +208,13 @@ fun ChatScreen(
                 actions = {
                     if (uiState.isStreaming) {
                         IconButton(onClick = { viewModel.abort() }) {
-                            Icon(
-                                Icons.Default.Stop,
-                                contentDescription = stringResource(R.string.chat_stop),
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                            Icon(Icons.Default.Stop, contentDescription = stringResource(R.string.chat_stop), tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -243,7 +237,7 @@ fun ChatScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = GitHubSpacing.md, vertical = GitHubSpacing.xs),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -257,7 +251,7 @@ fun ChatScreen(
                                 MaterialTheme.colorScheme.onErrorContainer
                             }
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(GitHubSpacing.xs))
                         Text(
                             text = uiState.connectionStatus ?: if (uiState.isOnline) "Online" else stringResource(R.string.chat_offline),
                             style = MaterialTheme.typography.bodyMedium,
@@ -277,8 +271,8 @@ fun ChatScreen(
                     .weight(1f)
                     .fillMaxWidth(),
                 state = listState,
-                contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(vertical = GitHubSpacing.xs),
+                verticalArrangement = Arrangement.spacedBy(GitHubSpacing.xs)
             ) {
                 // Load more history indicator
                 if (uiState.hasMoreHistory) {
@@ -286,15 +280,12 @@ fun ChatScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp),
+                                .padding(GitHubSpacing.xs),
                             contentAlignment = Alignment.Center
                         ) {
                             TextButton(onClick = { viewModel.loadMoreHistory() }) {
                                 if (uiState.isLoadingHistory) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp
-                                    )
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                 } else {
                                     Text(stringResource(R.string.chat_load_more))
                                 }
@@ -328,23 +319,19 @@ fun ChatScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = GitHubSpacing.md),
                             horizontalArrangement = Arrangement.Start
                         ) {
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                )
-                            ) {
+                            GitHubCard {
                                 Row(
-                                    modifier = Modifier.padding(12.dp),
+                                    modifier = Modifier.padding(GitHubSpacing.sm),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(16.dp),
                                         strokeWidth = 2.dp
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(GitHubSpacing.xs))
                                     Text(
                                         stringResource(R.string.chat_thinking),
                                         style = MaterialTheme.typography.bodyMedium
@@ -369,7 +356,6 @@ fun ChatScreen(
                     )
                 },
                 onMicClick = {
-                    // Check permission
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
                         == PackageManager.PERMISSION_GRANTED
                     ) {
@@ -392,7 +378,6 @@ fun ChatScreen(
         }
     }
     
-    // Error snackbar
     uiState.error?.let { error ->
         LaunchedEffect(error) {
             // Show snackbar
@@ -409,23 +394,15 @@ private fun MessageBubble(
 ) {
     val isUser = message.role == MessageRole.USER
     var showMenu by remember { mutableStateOf(false) }
-    val context = LocalContext.current
     
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = GitHubSpacing.md),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
         Box {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isUser) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    }
-                ),
+            GitHubCard(
                 modifier = Modifier
                     .fillMaxWidth(0.85f)
                     .clip(
@@ -439,23 +416,32 @@ private fun MessageBubble(
                     .combinedClickable(
                         onClick = {},
                         onLongClick = { showMenu = true }
-                    )
+                    ),
+                backgroundColor = if (isUser) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                }
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp)
+                    modifier = Modifier.padding(GitHubSpacing.sm)
                 ) {
                     // Role indicator
-                    Text(
+                    GitHubBadge(
                         text = message.role.name.lowercase().replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isUser) {
-                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        backgroundColor = if (isUser) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        textColor = if (isUser) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
                         }
                     )
                     
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(GitHubSpacing.xxs))
                     
                     // Message content with Markdown rendering
                     MarkdownText(
@@ -477,21 +463,21 @@ private fun MessageBubble(
                             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         },
                         modifier = Modifier
-                            .padding(top = 4.dp)
+                            .padding(top = GitHubSpacing.xxs)
                             .align(Alignment.End)
                     )
                     
                     // Streaming indicator
                     if (message.isStreaming) {
                         Row(
-                            modifier = Modifier.padding(top = 4.dp),
+                            modifier = Modifier.padding(top = GitHubSpacing.xxs),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(12.dp),
                                 strokeWidth = 1.5.dp
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(GitHubSpacing.xxs))
                             Text(
                                 stringResource(R.string.chat_streaming),
                                 style = MaterialTheme.typography.labelSmall,
@@ -503,7 +489,7 @@ private fun MessageBubble(
                     // Error indicator
                     message.error?.let { error ->
                         Row(
-                            modifier = Modifier.padding(top = 4.dp),
+                            modifier = Modifier.padding(top = GitHubSpacing.xxs),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -512,7 +498,7 @@ private fun MessageBubble(
                                 modifier = Modifier.size(14.dp),
                                 tint = MaterialTheme.colorScheme.error
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(GitHubSpacing.xxs))
                             Text(
                                 text = error,
                                 style = MaterialTheme.typography.labelSmall,
@@ -569,7 +555,6 @@ private fun MessageInput(
 ) {
     val focusRequester = remember { FocusRequester() }
     
-    // Auto-focus when entering chat screen
     LaunchedEffect(shouldFocus) {
         if (shouldFocus) {
             kotlinx.coroutines.delay(300)
@@ -579,35 +564,29 @@ private fun MessageInput(
     
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shadowElevation = 8.dp
+        shadowElevation = 8.dp,
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(GitHubSpacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Attachment button
             IconButton(onClick = onAttach) {
-                Icon(
-                    Icons.Default.AttachFile,
-                    contentDescription = stringResource(R.string.chat_attach)
-                )
+                Icon(Icons.Default.AttachFile, contentDescription = stringResource(R.string.chat_attach))
             }
             
-            TextField(
+            // Text field
+            GitHubTextField(
                 value = text,
                 onValueChange = onTextChange,
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(focusRequester),
-                placeholder = { Text(stringResource(R.string.chat_input_hint)) },
-                maxLines = 4,
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                shape = RoundedCornerShape(24.dp)
+                placeholder = stringResource(R.string.chat_input_hint),
+                maxLines = 4
             )
             
             // Microphone button
@@ -630,25 +609,27 @@ private fun MessageInput(
                 }
             }
             
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(GitHubSpacing.xxs))
             
-            FilledIconButton(
+            // Send button
+            GitHubButton(
+                text = "",
                 onClick = onSend,
                 enabled = text.isNotBlank() && !isSending,
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+                isLoading = isSending,
+                variant = ai.openclaw.android.presentation.components.GitHubButtonVariant.PRIMARY
             ) {
                 if (isSending) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(20.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
                         strokeWidth = 2.dp
                     )
                 } else {
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
-                        contentDescription = stringResource(R.string.chat_send)
+                        contentDescription = stringResource(R.string.chat_send),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -656,9 +637,6 @@ private fun MessageInput(
     }
 }
 
-/**
- * Format message timestamp to readable time
- */
 @Composable
 private fun formatMessageTime(timestamp: Long): String {
     val now = System.currentTimeMillis()
@@ -669,21 +647,17 @@ private fun formatMessageTime(timestamp: Long): String {
     messageCalendar.timeInMillis = timestamp
     
     return when {
-        // Today - show time only
         calendar.get(Calendar.YEAR) == messageCalendar.get(Calendar.YEAR) &&
         calendar.get(Calendar.DAY_OF_YEAR) == messageCalendar.get(Calendar.DAY_OF_YEAR) -> {
             SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
         }
-        // Yesterday
         calendar.get(Calendar.YEAR) == messageCalendar.get(Calendar.YEAR) &&
         calendar.get(Calendar.DAY_OF_YEAR) - messageCalendar.get(Calendar.DAY_OF_YEAR) == 1 -> {
             "Yesterday " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
         }
-        // Same year
         calendar.get(Calendar.YEAR) == messageCalendar.get(Calendar.YEAR) -> {
             SimpleDateFormat("MMM dd HH:mm", Locale.getDefault()).format(Date(timestamp))
         }
-        // Different year
         else -> {
             SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(Date(timestamp))
         }

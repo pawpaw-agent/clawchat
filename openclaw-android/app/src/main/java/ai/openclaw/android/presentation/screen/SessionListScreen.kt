@@ -2,11 +2,17 @@ package ai.openclaw.android.presentation.screen
 
 import ai.openclaw.android.R
 import ai.openclaw.android.domain.model.Session
+import ai.openclaw.android.presentation.components.GitHubBadge
+import ai.openclaw.android.presentation.components.GitHubButton
+import ai.openclaw.android.presentation.components.GitHubCard
+import ai.openclaw.android.presentation.components.GitHubListItem
+import ai.openclaw.android.presentation.components.GitHubSearchField
+import ai.openclaw.android.presentation.components.ListItemIcon
+import ai.openclaw.android.presentation.theme.GitHubSpacing
 import ai.openclaw.android.presentation.viewmodel.SessionListViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -53,14 +59,16 @@ fun SessionListScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showCreateDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = MaterialTheme.colorScheme.primary,
+                shape = MaterialTheme.shapes.medium
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.sessions_new))
             }
@@ -71,26 +79,13 @@ fun SessionListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Search bar - placed in content area for better layout
-            OutlinedTextField(
+            // Search bar
+            GitHubSearchField(
                 value = searchText,
                 onValueChange = { searchText = it },
-                placeholder = { Text(stringResource(R.string.sessions_search_hint)) },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null)
-                },
-                trailingIcon = {
-                    if (searchText.isNotEmpty()) {
-                        IconButton(onClick = { searchText = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.connect_dismiss))
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                singleLine = true,
-                shape = RoundedCornerShape(24.dp)
+                placeholder = stringResource(R.string.sessions_search_hint),
+                modifier = Modifier.padding(GitHubSpacing.md),
+                onSearch = {}
             )
             
             // Session list
@@ -110,25 +105,28 @@ fun SessionListScreen(
                             modifier = Modifier.size(64.dp),
                             tint = MaterialTheme.colorScheme.outline
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(GitHubSpacing.md))
                         Text(
                             text = if (searchText.isNotEmpty()) stringResource(R.string.sessions_no_results) else stringResource(R.string.sessions_no_sessions),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.outline
                         )
                         if (searchText.isEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { showCreateDialog = true }) {
-                                Icon(Icons.Default.Add, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.sessions_create))
-                            }
+                            Spacer(modifier = Modifier.height(GitHubSpacing.sm))
+                            GitHubButton(
+                                text = stringResource(R.string.sessions_create),
+                                onClick = { showCreateDialog = true },
+                                variant = ai.openclaw.android.presentation.components.GitHubButtonVariant.SECONDARY,
+                                leadingIcon = {
+                                    Icon(Icons.Default.Add, contentDescription = null)
+                                }
+                            )
                         }
                     }
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp)
+                        contentPadding = PaddingValues(vertical = GitHubSpacing.xs)
                     ) {
                         items(filteredSessions, key = { it.key }) { session ->
                             SessionItem(
@@ -186,27 +184,22 @@ private fun SessionItem(
     var showResetConfirm by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        onClick = onClick
+    GitHubCard(
+        onClick = onClick,
+        modifier = Modifier.padding(horizontal = GitHubSpacing.md, vertical = GitHubSpacing.xxs)
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Icon
-            Icon(
-                imageVector = Icons.Default.Chat,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp)
+            ListItemIcon(
+                icon = Icons.Default.Chat,
+                tint = MaterialTheme.colorScheme.primary
             )
             
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(GitHubSpacing.sm))
             
             // Content
             Column(modifier = Modifier.weight(1f)) {
@@ -214,31 +207,32 @@ private fun SessionItem(
                     text = session.displayName,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(GitHubSpacing.xxs))
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "${session.messageCount} ${stringResource(R.string.sessions_messages)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     session.channel?.let { channel ->
-                        Spacer(modifier = Modifier.width(8.dp))
-                        SuggestionChip(
-                            onClick = {},
-                            label = { Text(channel, style = MaterialTheme.typography.labelSmall) },
-                            modifier = Modifier.height(24.dp)
+                        Spacer(modifier = Modifier.width(GitHubSpacing.xs))
+                        GitHubBadge(
+                            text = channel,
+                            backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+                            textColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(GitHubSpacing.xxs))
                 Text(
                     text = formatTimestamp(session.updatedAt),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
@@ -247,7 +241,8 @@ private fun SessionItem(
                 IconButton(onClick = { showMenu = true }) {
                     Icon(
                         Icons.Default.MoreVert,
-                        contentDescription = stringResource(R.string.sessions_more_options)
+                        contentDescription = stringResource(R.string.sessions_more_options),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 
