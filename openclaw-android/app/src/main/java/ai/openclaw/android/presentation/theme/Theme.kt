@@ -3,6 +3,7 @@ package ai.openclaw.android.presentation.theme
 import android.app.Application
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -72,82 +73,156 @@ class ThemeViewModel @Inject constructor(
     }
 }
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF6B9BFF),
-    onPrimary = Color(0xFF003258),
-    primaryContainer = Color(0xFF00497D),
-    onPrimaryContainer = Color(0xFFD5E3FF),
-    secondary = Color(0xFFBFC6DC),
-    onSecondary = Color(0xFF283141),
-    secondaryContainer = Color(0xFF3E4758),
-    onSecondaryContainer = Color(0xFFDBE2F9),
-    tertiary = Color(0xFFFFB77B),
-    onTertiary = Color(0xFF4C2800),
-    tertiaryContainer = Color(0xFF6B3B0C),
-    onTertiaryContainer = Color(0xFFFFDCC5),
-    error = Color(0xFFFFB4AB),
-    onError = Color(0xFF690005),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6),
-    background = Color(0xFF1A1C1E),
-    onBackground = Color(0xFFE3E2E6),
-    surface = Color(0xFF1A1C1E),
-    onSurface = Color(0xFFE3E2E6),
-    surfaceVariant = Color(0xFF43474E),
-    onSurfaceVariant = Color(0xFFC3C6CF),
-    outline = Color(0xFF8D9199),
-    outlineVariant = Color(0xFF43474E),
-    scrim = Color(0xFF000000),
-    inverseSurface = Color(0xFFE3E2E6),
-    inverseOnSurface = Color(0xFF1A1C1E),
-    inversePrimary = Color(0xFF0061A4),
+// ==================== GitHub 主题配色 ====================
+
+/**
+ * GitHub Dark Dimmed 配色方案
+ * 深色背景使用 #0D1117 而非纯黑，降低视觉疲劳
+ */
+private val GitHubDarkColorScheme = darkColorScheme(
+    // 主色调 - GitHub Blue
+    primary = GitHubBlue400,
+    onPrimary = Color.White,
+    primaryContainer = GitHubBlue500,
+    onPrimaryContainer = Color.White,
+    
+    // 次要色 - GitHub Purple
+    secondary = GitHubPurple400,
+    onSecondary = Color.White,
+    secondaryContainer = GitHubPurple500,
+    onSecondaryContainer = Color.White,
+    
+    // 第三色 - GitHub Green
+    tertiary = GitHubGreen500,
+    onTertiary = Color.White,
+    tertiaryContainer = GitHubGreen600,
+    onTertiaryContainer = Color.White,
+    
+    // 错误色 - GitHub Red
+    error = GitHubRed500,
+    onError = Color.White,
+    errorContainer = GitHubRed600,
+    onErrorContainer = Color.White,
+    
+    // 背景色 - Dark Dimmed
+    background = GitHubBgDefaultDark,
+    onBackground = GitHubTextDefaultDark,
+    
+    // 表面色
+    surface = GitHubBgSubtleDark,
+    onSurface = GitHubTextDefaultDark,
+    surfaceVariant = GitHubBgMutedDark,
+    onSurfaceVariant = GitHubTextMutedDark,
+    
+    // 边框/分割线
+    outline = GitHubBorderDefaultDark,
+    outlineVariant = GitHubBorderMutedDark,
+    
+    // 其他
+    scrim = Color.Black,
+    inverseSurface = GitHubTextDefaultDark,
+    inverseOnSurface = GitHubBgDefaultDark,
+    inversePrimary = GitHubBlue500,
+    
+    // 表面色调
+    surfaceTint = GitHubBlue400,
+    surfaceBright = GitHubBgElevatedDark,
+    surfaceDim = GitHubBgDefaultDark,
+    surfaceContainer = GitHubBgSubtleDark,
+    surfaceContainerHigh = GitHubBgMutedDark,
+    surfaceContainerHighest = GitHubBgElevatedDark,
+    surfaceContainerLow = GitHubBgSubtleDark,
+    surfaceContainerLowest = GitHubBgDefaultDark
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF0061A4),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFD5E3FF),
-    onPrimaryContainer = Color(0xFF001C37),
-    secondary = Color(0xFF545F71),
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFD8E3F8),
-    onSecondaryContainer = Color(0xFF111C2B),
-    tertiary = Color(0xFF87512C),
-    onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFFFDCC5),
-    onTertiaryContainer = Color(0xFF351000),
-    error = Color(0xFFBA1A1A),
-    onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFFFFDAD6),
-    onErrorContainer = Color(0xFF410002),
-    background = Color(0xFFFDFCFF),
-    onBackground = Color(0xFF1A1C1E),
-    surface = Color(0xFFFDFCFF),
-    onSurface = Color(0xFF1A1C1E),
-    surfaceVariant = Color(0xFFE0E2EC),
-    onSurfaceVariant = Color(0xFF43474E),
-    outline = Color(0xFF73777F),
-    outlineVariant = Color(0xFFC3C6CF),
-    scrim = Color(0xFF000000),
-    inverseSurface = Color(0xFF2F3033),
-    inverseOnSurface = Color(0xFFF1F0F4),
-    inversePrimary = Color(0xFF9FCAFC),
+/**
+ * GitHub Light 配色方案
+ */
+private val GitHubLightColorScheme = lightColorScheme(
+    // 主色调 - GitHub Blue
+    primary = GitHubBlue500,
+    onPrimary = Color.White,
+    primaryContainer = GitHubBlue300,
+    onPrimaryContainer = Color.White,
+    
+    // 次要色 - GitHub Purple
+    secondary = GitHubPurple500,
+    onSecondary = Color.White,
+    secondaryContainer = GitHubPurple500,
+    onSecondaryContainer = Color.White,
+    
+    // 第三色 - GitHub Green
+    tertiary = GitHubGreen600,
+    onTertiary = Color.White,
+    tertiaryContainer = GitHubGreen500,
+    onTertiaryContainer = Color.White,
+    
+    // 错误色 - GitHub Red
+    error = GitHubRed600,
+    onError = Color.White,
+    errorContainer = GitHubRed500,
+    onErrorContainer = Color.White,
+    
+    // 背景色 - 纯白
+    background = GitHubBgDefaultLight,
+    onBackground = GitHubTextDefaultLight,
+    
+    // 表面色
+    surface = GitHubBgSubtleLight,
+    onSurface = GitHubTextDefaultLight,
+    surfaceVariant = GitHubBgMutedLight,
+    onSurfaceVariant = GitHubTextMutedLight,
+    
+    // 边框/分割线
+    outline = GitHubBorderDefaultLight,
+    outlineVariant = GitHubBorderMutedLight,
+    
+    // 其他
+    scrim = Color.Black,
+    inverseSurface = GitHubTextDefaultLight,
+    inverseOnSurface = GitHubBgDefaultLight,
+    inversePrimary = GitHubBlue400,
+    
+    // 表面色调
+    surfaceTint = GitHubBlue500,
+    surfaceBright = GitHubBgDefaultLight,
+    surfaceDim = GitHubBgSubtleLight,
+    surfaceContainer = GitHubBgSubtleLight,
+    surfaceContainerHigh = GitHubBgMutedLight,
+    surfaceContainerHighest = GitHubBgMutedLight,
+    surfaceContainerLow = GitHubBgSubtleLight,
+    surfaceContainerLowest = GitHubBgDefaultLight
 )
 
+/**
+ * GitHub 字体排版
+ */
+val GitHubTypography: Typography = GitHubTypography
+
+/**
+ * OpenClaw 主题
+ * 
+ * @param darkTheme 系统深色模式状态
+ * @param themeMode 主题模式 (LIGHT/DARK/SYSTEM)
+ * @param content 内容
+ */
 @Composable
 fun OpenClawTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     content: @Composable () -> Unit
 ) {
+    // 根据主题模式决定是否使用深色
     val isDark = when (themeMode) {
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
         ThemeMode.SYSTEM -> darkTheme
     }
     
-    val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
+    // 选择配色方案
+    val colorScheme = if (isDark) GitHubDarkColorScheme else GitHubLightColorScheme
 
+    // 状态栏适配
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -159,6 +234,7 @@ fun OpenClawTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
+        typography = GitHubTypography,
         content = content
     )
 }
