@@ -77,6 +77,10 @@ private fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
     val lines = text.lines()
     var i = 0
     
+    val headingPattern = Regex("^#{1,4}\\s+.+$")
+    val unorderedListPattern = Regex("^[*-]\\s+.+$")
+    val orderedListPattern = Regex("^\\d+\\.\\s+.+$")
+    
     while (i < lines.size) {
         val line = lines[i]
         
@@ -95,11 +99,11 @@ private fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
         }
         
         // Heading (### Title)
-        val headingMatch = Regex("^(#{1,4})\\s+(.+)$").find(line)
-        if (headingMatch != null) {
-            val level = headingMatch.groupValues[1].length
-            val text = headingMatch.groupValues[2]
-            blocks.add(MarkdownBlock.Heading(level, parseInlineMarkdown(text, codeBackground)))
+        if (headingPattern.matches(line)) {
+            val match = Regex("^(#{1,4})\\s+(.+)$").find(line)!!
+            val level = match.groupValues[1].length
+            val headingText = match.groupValues[2]
+            blocks.add(MarkdownBlock.Heading(level, parseInlineMarkdown(headingText, codeBackground)))
             i++
             continue
         }
@@ -116,9 +120,9 @@ private fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
         }
         
         // Unordered list (- item or * item)
-        if (line.matches("^[*-]\\s+.+$")) {
+        if (unorderedListPattern.matches(line)) {
             val items = mutableListOf<AnnotatedString>()
-            while (i < lines.size && lines[i].matches("^[*-]\\s+.+$")) {
+            while (i < lines.size && unorderedListPattern.matches(lines[i])) {
                 items.add(parseInlineMarkdown(lines[i].drop(2), codeBackground))
                 i++
             }
@@ -127,9 +131,9 @@ private fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
         }
         
         // Ordered list (1. item)
-        if (line.matches("^\\d+\\.\\s+.+$")) {
+        if (orderedListPattern.matches(line)) {
             val items = mutableListOf<AnnotatedString>()
-            while (i < lines.size && lines[i].matches("^\\d+\\.\\s+.+$")) {
+            while (i < lines.size && orderedListPattern.matches(lines[i])) {
                 items.add(parseInlineMarkdown(lines[i].dropWhile { it != ' ' }.drop(1), codeBackground))
                 i++
             }
@@ -143,9 +147,9 @@ private fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
             while (i < lines.size && lines[i].isNotBlank() && 
                    !lines[i].startsWith("```") && 
                    !lines[i].startsWith("> ") &&
-                   !lines[i].matches("^[*-]\\s+.+$") &&
-                   !lines[i].matches("^\\d+\\.\\s+.+$") &&
-                   !lines[i].matches("^#{1,4}\\s+.+$")) {
+                   !unorderedListPattern.matches(lines[i]) &&
+                   !orderedListPattern.matches(lines[i]) &&
+                   !headingPattern.matches(lines[i])) {
                 paragraphLines.add(lines[i])
                 i++
             }
