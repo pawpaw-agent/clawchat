@@ -18,11 +18,7 @@ import androidx.compose.ui.unit.dp
 import ai.openclaw.android.presentation.theme.GitHubSizes
 import ai.openclaw.android.presentation.theme.GitHubSpacing
 import ai.openclaw.android.presentation.theme.GitHubBlue500
-import ai.openclaw.android.presentation.theme.GitHubBlue400
 import ai.openclaw.android.presentation.theme.GitHubRed600
-import ai.openclaw.android.presentation.theme.GitHubRed500
-import ai.openclaw.android.presentation.theme.GitHubBgSubtleDark
-import ai.openclaw.android.presentation.theme.GitHubBgSubtleLight
 
 /**
  * GitHub 风格按钮组件
@@ -66,15 +62,6 @@ fun GitHubButton(
         GitHubButtonVariant.GHOST -> Color.Transparent
     }
     
-    val disabledContainerColor = when (variant) {
-        GitHubButtonVariant.PRIMARY -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-        GitHubButtonVariant.SECONDARY -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-        GitHubButtonVariant.DANGER -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-        GitHubButtonVariant.GHOST -> Color.Transparent
-    }
-    
-    val disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-    
     when (variant) {
         GitHubButtonVariant.GHOST -> {
             TextButton(
@@ -82,8 +69,7 @@ fun GitHubButton(
                 modifier = modifier.height(GitHubSizes.buttonHeight),
                 enabled = enabled && !isLoading,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = if (enabled) contentColor else disabledContentColor,
-                    disabledContentColor = disabledContentColor
+                    contentColor = contentColor
                 ),
                 shape = RoundedCornerShape(GitHubSizes.buttonRadius),
                 contentPadding = PaddingValues(horizontal = GitHubSpacing.md, vertical = GitHubSpacing.xs)
@@ -97,9 +83,7 @@ fun GitHubButton(
                 modifier = modifier.height(GitHubSizes.buttonHeight),
                 enabled = enabled && !isLoading,
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (enabled) contentColor else disabledContentColor,
-                    disabledContentColor = disabledContentColor,
-                    disabledBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    contentColor = contentColor
                 ),
                 shape = RoundedCornerShape(GitHubSizes.buttonRadius),
                 contentPadding = PaddingValues(horizontal = GitHubSpacing.md, vertical = GitHubSpacing.xs)
@@ -113,10 +97,8 @@ fun GitHubButton(
                 modifier = modifier.height(GitHubSizes.buttonHeight),
                 enabled = enabled && !isLoading,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (enabled) containerColor else disabledContainerColor,
-                    contentColor = if (enabled) contentColor else disabledContentColor,
-                    disabledContainerColor = disabledContainerColor,
-                    disabledContentColor = disabledContentColor
+                    containerColor = containerColor,
+                    contentColor = contentColor
                 ),
                 shape = RoundedCornerShape(GitHubSizes.buttonRadius),
                 contentPadding = PaddingValues(horizontal = GitHubSpacing.md, vertical = GitHubSpacing.xs)
@@ -146,9 +128,7 @@ private fun ButtonContent(
         }
         Text(
             text = text,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier
-                .then(if (leadingIcon != null) Modifier else Modifier)
+            style = MaterialTheme.typography.labelLarge
         )
         trailingIcon?.let {
             it()

@@ -52,7 +52,7 @@ fun GitHubCard(
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
     ) {
         Column(
-            modifier = Modifier.padding(GitHubSpacing.cardPadding)
+            modifier = Modifier.padding(GitHubSpacing.md)
         ) {
             content()
         }

@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -13,6 +15,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import ai.openclaw.android.presentation.theme.GitHubSizes
@@ -67,15 +70,6 @@ fun GitHubTextField(
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
-        onKeyEvent = { 
-            if (it.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                it.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_ENTER) {
-                onSubmitted?.invoke(value)
-                true
-            } else {
-                false
-            }
-        },
         shape = RoundedCornerShape(GitHubSizes.buttonRadius),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = if (isError) GitHubRed600 else GitHubBlue500,
@@ -105,7 +99,6 @@ fun GitHubTextField(
             unfocusedContainerColor = MaterialTheme.colorScheme.surface
         ),
         textStyle = LocalTextStyle.current.copy(
-            fontSize = androidx.compose.ui.unit.TextUnit.Unspecified,
             style = MaterialTheme.typography.bodyLarge
         )
     )
@@ -129,7 +122,7 @@ fun GitHubSearchField(
         placeholder = placeholder,
         leadingIcon = {
             Icon(
-                imageVector = androidx.compose.material.icons.Icons.Outlined.Search,
+                imageVector = Icons.Outlined.Search,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )

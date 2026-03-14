@@ -110,7 +110,7 @@ fun SkeletonBlock(
     shape: RoundedCornerShape = RoundedCornerShape(4.dp)
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "skeleton")
-    val alpha by infiniteTransition.animateFloat(
+    val alpha = infiniteTransition.animateFloat(
         initialValue = 0.3f,
         targetValue = 0.8f,
         animationSpec = infiniteRepeatable(
@@ -125,7 +125,7 @@ fun SkeletonBlock(
             .width(width.dp)
             .height(height.dp)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha.value))
     )
 }
 
@@ -201,7 +201,7 @@ fun SkeletonCard(
             .padding(GitHubSpacing.md)
             .clip(RoundedCornerShape(GitHubSizes.cardRadius))
             .background(MaterialTheme.colorScheme.surface)
-            .padding(GitHubSpacing.cardPadding),
+            .padding(GitHubSpacing.md),
         verticalArrangement = Arrangement.spacedBy(GitHubSpacing.sm)
     ) {
         if (showHeader) {

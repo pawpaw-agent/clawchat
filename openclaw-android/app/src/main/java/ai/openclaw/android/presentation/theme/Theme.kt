@@ -194,10 +194,7 @@ private val GitHubLightColorScheme = lightColorScheme(
     surfaceContainerLowest = GitHubBgDefaultLight
 )
 
-/**
- * GitHub 字体排版
- */
-val GitHubTypography: Typography = GitHubTypography
+// GitHubTypography is imported from Type.kt
 
 /**
  * OpenClaw 主题
