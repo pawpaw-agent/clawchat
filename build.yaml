@@ -17,4 +17,3 @@ targets:
           explicit_to_json: false
           field_rename: none
           include_if_null: true
-          nullable: true
