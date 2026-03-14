@@ -115,6 +115,8 @@ class ConnectViewModel @Inject constructor(
             val savedUrl = credentialsStorage.getGatewayUrl()
             val savedToken = credentialsStorage.getToken()
             
+            android.util.Log.d("ConnectVM", "Loaded credentials: url=${savedUrl != null}, token=${savedToken != null}, url=$savedUrl")
+            
             if (!savedUrl.isNullOrBlank()) {
                 _uiState.value = _uiState.value.copy(
                     gatewayUrl = savedUrl,
@@ -159,11 +161,15 @@ class ConnectViewModel @Inject constructor(
     }
     
     fun forgetCredentials() {
+        android.util.Log.d("ConnectVM", "Forgetting credentials...")
         credentialsStorage.clearCredentials()
         _uiState.value = _uiState.value.copy(
             gatewayUrl = "",
-            token = ""
+            token = "",
+            errorMessage = null,
+            isConnected = false
         )
+        android.util.Log.d("ConnectVM", "Credentials cleared, state reset")
     }
 
     fun clearError() {

@@ -41,15 +41,29 @@ class CredentialsStorage @Inject constructor(
      * 获取保存的 Gateway URL
      */
     fun getGatewayUrl(): String? {
-        return sharedPreferences.getString(KEY_GATEWAY_URL, null)
+        return try {
+            sharedPreferences.getString(KEY_GATEWAY_URL, null)
+        } catch (e: Exception) {
+            android.util.Log.e("CredentialsStorage", "Failed to get gateway URL: ${e.message}")
+            // 可能是签名变更导致无法解密，清除旧数据
+            clearCredentials()
+            null
+        }
     }
 
     /**
      * 获取保存的 Token
      */
     fun getToken(): String? {
-        val token = sharedPreferences.getString(KEY_TOKEN, null)
-        return if (token.isNullOrBlank()) null else token
+        return try {
+            val token = sharedPreferences.getString(KEY_TOKEN, null)
+            if (token.isNullOrBlank()) null else token
+        } catch (e: Exception) {
+            android.util.Log.e("CredentialsStorage", "Failed to get token: ${e.message}")
+            // 可能是签名变更导致无法解密，清除旧数据
+            clearCredentials()
+            null
+        }
     }
 
     /**
