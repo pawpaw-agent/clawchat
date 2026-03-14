@@ -125,20 +125,52 @@ class ChatRepository @Inject constructor(
         content: String,
         imageUri: Uri
     ): Result<String> = withContext(Dispatchers.IO) {
+        android.util.Log.d("ChatRepository", "=== sendMessageWithImage START ===")
+        android.util.Log.d("ChatRepository", "sessionKey: $sessionKey")
+        android.util.Log.d("ChatRepository", "content: $content")
+        android.util.Log.d("ChatRepository", "imageUri: $imageUri")
+        
         // 1. 压缩图片
         val compressedImage = compressImage(imageUri)
         if (compressedImage == null) {
+            android.util.Log.e("ChatRepository", "Failed to compress image - result is null")
             return@withContext Result.failure(Exception("Failed to compress image"))
         }
+        android.util.Log.d("ChatRepository", "Compressed image size: ${compressedImage.size} bytes")
         
         // 2. 转换为 base64
         val base64Image = Base64.encodeToString(compressedImage, Base64.NO_WRAP)
+        android.util.Log.d("ChatRepository", "Base64 length: ${base64Image.length}")
         
         // 3. 构建附件 (Gateway expects 'content' field for base64 data)
         val attachment = buildJsonObject {
             put("type", "image")
             put("mimeType", "image/jpeg")
             put("content", base64Image)  // Use 'content' not 'data'
+        }
+        android.util.Log.d("ChatRepository", "Attachment keys: ${attachment.keys.toList()}")
+        
+        // 6. 发送到服务器
+        val actualSessionKey = if (sessionKey.isBlank()) "main" else sessionKey
+        val idempotencyKey = UUID.randomUUID().toString()
+        val params = buildJsonObject {
+            put("sessionKey", actualSessionKey)
+            put("message", content)
+            put("idempotencyKey", idempotencyKey)
+            put("attachments", buildJsonArray { add(attachment) })
+        }
+        
+        android.util.Log.d("ChatRepository", "=== chat.send params ===")
+        android.util.Log.d("ChatRepository", "sessionKey: $actualSessionKey")
+        android.util.Log.d("ChatRepository", "message: $content")
+        android.util.Log.d("ChatRepository", "idempotencyKey: $idempotencyKey")
+        android.util.Log.d("ChatRepository", "attachments count: ${params["attachments"]?.jsonArray?.size}")
+        
+        val result = gatewayClient.request("chat.send", params)
+        
+        android.util.Log.d("ChatRepository", "chat.send result: ${result.isSuccess}")
+        if (result.isFailure) {
+            android.util.Log.e("ChatRepository", "chat.send error: ${result.exceptionOrNull()?.message}")
         }
         
         // 4. 保存用户消息到本地
@@ -166,18 +198,6 @@ class ChatRepository @Inject constructor(
             isStreaming = true
         )
         messageDao.insertMessage(assistantMessage)
-        
-        // 6. 发送到服务器
-        val actualSessionKey = if (sessionKey.isBlank()) "main" else sessionKey
-        val idempotencyKey = UUID.randomUUID().toString()
-        val params = buildJsonObject {
-            put("sessionKey", actualSessionKey)
-            put("message", content)
-            put("idempotencyKey", idempotencyKey)
-            put("attachments", buildJsonArray { add(attachment) })
-        }
-        
-        val result = gatewayClient.request("chat.send", params)
         
         result.map { response ->
             val runId = response["runId"]?.jsonPrimitive?.content ?: ""
