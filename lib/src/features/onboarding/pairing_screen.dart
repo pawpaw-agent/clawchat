@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logger/logger.dart';
 import '../settings/settings_controller.dart';
 import '../../shared/widgets/main_shell.dart';
 import '../../core/api/gateway_client.dart';
