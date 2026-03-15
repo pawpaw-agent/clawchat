@@ -261,12 +261,4 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
       ),
     );
   }
-}),
-              tooltip: 'Copy code',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
