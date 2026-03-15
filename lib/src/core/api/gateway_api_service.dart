@@ -98,7 +98,7 @@ class GatewayApiService {
     Logger? logger,
   })  : _client = client,
         _uuid = uuid ?? const Uuid(),
-        _logger = logger ?? Logger(printer: PrettyPrinter());
+        _logger = logger ?? Logger();
 
   /// Check if connected
   bool get isConnected => _client.isConnected;
@@ -111,7 +111,6 @@ class GatewayApiService {
   // =========================================================================
 
   /// Request device pairing
-  /// Returns pairing code and optional device token
   Future<ApiResponse<PairingResponse>> requestPairing({
     String? displayName,
     String platform = 'android',
@@ -119,9 +118,9 @@ class GatewayApiService {
     List<String>? commands,
   }) async {
     try {
-      final response = await _client.request(
-        method: 'node.pair.request',
-        params: {
+      final response = await _client.sendRequest(
+        'node.pair.request',
+        {
           'nodeId': _uuid.v4(),
           if (displayName != null) 'displayName': displayName,
           'platform': platform,
@@ -148,15 +147,12 @@ class GatewayApiService {
   }
 
   /// Approve device pairing
-  Future<ApiResponse<bool>> approvePairing({
-    required String requestId,
-  }) async {
+  Future<ApiResponse<bool>> approvePairing({required String requestId}) async {
     try {
       final response = await _client.sendRequest(
-        method: 'node.pair.approve',
-        params: {'requestId': requestId},
+        'node.pair.approve',
+        {'requestId': requestId},
       );
-
       return ApiResponse.success(response.ok);
     } catch (e) {
       _logger.e('Pairing approval failed', error: e);
@@ -179,9 +175,9 @@ class GatewayApiService {
     String? idempotencyKey,
   }) async {
     try {
-      final response = await _client.request(
-        method: 'chat.send',
-        params: {
+      final response = await _client.sendRequest(
+        'chat.send',
+        {
           'sessionKey': sessionKey,
           'message': message,
           'idempotencyKey': idempotencyKey ?? _uuid.v4(),
@@ -214,9 +210,9 @@ class GatewayApiService {
     String? idempotencyKey,
   }) async {
     try {
-      final response = await _client.request(
-        method: 'agent.turn',
-        params: {
+      final response = await _client.sendRequest(
+        'agent.turn',
+        {
           'message': message,
           'idempotencyKey': idempotencyKey ?? _uuid.v4(),
           if (sessionKey != null) 'sessionKey': sessionKey,
@@ -242,17 +238,12 @@ class GatewayApiService {
   }
 
   /// Subscribe to chat updates
-  Future<ApiResponse<bool>> subscribeToChat({
-    String? sessionKey,
-  }) async {
+  Future<ApiResponse<bool>> subscribeToChat({String? sessionKey}) async {
     try {
-      final response = await _client.request(
-        method: 'chat.subscribe',
-        params: {
-          if (sessionKey != null) 'sessionKey': sessionKey,
-        },
+      final response = await _client.sendRequest(
+        'chat.subscribe',
+        {if (sessionKey != null) 'sessionKey': sessionKey},
       );
-
       return ApiResponse.success(response.ok);
     } catch (e) {
       _logger.e('Chat subscribe failed', error: e);
@@ -270,9 +261,9 @@ class GatewayApiService {
     String? before,
   }) async {
     try {
-      final response = await _client.request(
-        method: 'chat.history',
-        params: {
+      final response = await _client.sendRequest(
+        'chat.history',
+        {
           if (sessionKey != null) 'sessionKey': sessionKey,
           'limit': limit,
           if (before != null) 'before': before,
@@ -310,9 +301,9 @@ class GatewayApiService {
     int? activeMinutes,
   }) async {
     try {
-      final response = await _client.request(
-        method: 'sessions.list',
-        params: {
+      final response = await _client.sendRequest(
+        'sessions.list',
+        {
           'limit': limit,
           if (activeMinutes != null) 'activeMinutes': activeMinutes,
         },
@@ -345,14 +336,10 @@ class GatewayApiService {
     bool deleteTranscript = true,
   }) async {
     try {
-      final response = await _client.request(
-        method: 'sessions.delete',
-        params: {
-          'key': key,
-          'deleteTranscript': deleteTranscript,
-        },
+      final response = await _client.sendRequest(
+        'sessions.delete',
+        {'key': key, 'deleteTranscript': deleteTranscript},
       );
-
       return ApiResponse.success(response.ok);
     } catch (e) {
       _logger.e('Delete session failed', error: e);
@@ -370,10 +357,7 @@ class GatewayApiService {
   /// List available nodes
   Future<ApiResponse<List<Node>>> listNodes() async {
     try {
-      final response = await _client.request(
-        method: 'node.list',
-        params: {},
-      );
+      final response = await _client.sendRequest('node.list', {});
 
       if (response.ok && response.payload != null) {
         final nodes = (response.payload!['nodes'] as List?)
@@ -397,13 +381,11 @@ class GatewayApiService {
   }
 
   /// Describe a node
-  Future<ApiResponse<Node>> describeNode({
-    required String nodeId,
-  }) async {
+  Future<ApiResponse<Node>> describeNode({required String nodeId}) async {
     try {
-      final response = await _client.request(
-        method: 'node.describe',
-        params: {'nodeId': nodeId},
+      final response = await _client.sendRequest(
+        'node.describe',
+        {'nodeId': nodeId},
       );
 
       if (response.ok && response.payload != null) {
@@ -432,9 +414,9 @@ class GatewayApiService {
     String? idempotencyKey,
   }) async {
     try {
-      final response = await _client.request(
-        method: 'node.invoke',
-        params: {
+      final response = await _client.sendRequest(
+        'node.invoke',
+        {
           'nodeId': nodeId,
           'command': command,
           'idempotencyKey': idempotencyKey ?? _uuid.v4(),
@@ -470,14 +452,10 @@ class GatewayApiService {
     required String decision,
   }) async {
     try {
-      final response = await _client.request(
-        method: 'exec.approval.resolve',
-        params: {
-          'id': id,
-          'decision': decision,
-        },
+      final response = await _client.sendRequest(
+        'exec.approval.resolve',
+        {'id': id, 'decision': decision},
       );
-
       return ApiResponse.success(response.ok);
     } catch (e) {
       _logger.e('Resolve approval failed', error: e);
@@ -491,10 +469,7 @@ class GatewayApiService {
   /// Get approval configuration
   Future<ApiResponse<Map<String, dynamic>>> getApprovalConfig() async {
     try {
-      final response = await _client.request(
-        method: 'exec.approvals.get',
-        params: {},
-      );
+      final response = await _client.sendRequest('exec.approvals.get', {});
 
       if (response.ok && response.payload != null) {
         return ApiResponse.success(response.payload!);

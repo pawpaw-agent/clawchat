@@ -38,6 +38,7 @@ class OnboardingScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
     
     return Column(
       children: [
@@ -112,6 +113,7 @@ class OnboardingScreen extends StatelessWidget {
     required String title,
     required String description,
   }) {
+    final theme = Theme.of(context);
     
     return Row(
       children: [
