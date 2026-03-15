@@ -1,366 +1,241 @@
-/// Settings screen
+/// Settings screen with Gateway configuration
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'settings_controller.dart';
-import '../../core/storage/app_settings.dart';
-import '../../core/constants.dart';
 
-class SettingsScreen extends ConsumerWidget {
+/// Settings screen
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  late final TextEditingController _gatewayUrlController;
+  late final TextEditingController _deviceTokenController;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _gatewayUrlController = TextEditingController();
+    _deviceTokenController = TextEditingController();
+    
+    // Load current values
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settings = ref.read(settingsProvider);
+      _gatewayUrlController.text = settings.gatewayUrl ?? '';
+      _deviceTokenController.text = settings.deviceToken ?? '';
+    });
+  }
+
+  @override
+  void dispose() {
+    _gatewayUrlController.dispose();
+    _deviceTokenController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(settingsProvider.notifier).refresh(),
-            tooltip: 'Refresh',
-          ),
-        ],
       ),
-      body: settings.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildBody(context, ref, settings),
-    );
-  }
-
-  Widget _buildBody(BuildContext context, WidgetRef ref, SettingsState settings) {
-    if (settings.error != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(settings.error!),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Dismiss',
-              textColor: Colors.white,
-              onPressed: () => ref.read(settingsProvider.notifier).clearError(),
-            ),
-          ),
-        );
-      });
-    }
-
-    return ListView(
-      children: [
-        // Gateway Settings Section
-        _buildSectionHeader('Gateway'),
-        _buildGatewayTile(context, ref, settings),
-        const Divider(),
-
-        // Authentication Section
-        _buildSectionHeader('Authentication'),
-        _buildAuthTile(context, ref, settings),
-        _buildClearAuthTile(context, ref, settings),
-        const Divider(),
-
-        // Appearance Section
-        _buildSectionHeader('Appearance'),
-        _buildThemeTile(context, ref, settings),
-        _buildLanguageTile(context, ref, settings),
-        const Divider(),
-
-        // Data Section
-        _buildSectionHeader('Data'),
-        _buildClearDataTile(context, ref, settings),
-        const Divider(),
-
-        // About Section
-        _buildSectionHeader('About'),
-        _buildAboutTile(),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey,
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
-  }
-
-  // ==================== Gateway Section ====================
-
-  Widget _buildGatewayTile(BuildContext context, WidgetRef ref, SettingsState settings) {
-    return ListTile(
-      leading: const Icon(Icons.dns),
-      title: const Text('Gateway URL'),
-      subtitle: Text(
-        settings.gatewayUrl ?? AppConstants.defaultGatewayUrl,
-        style: TextStyle(
-          color: settings.gatewayUrl == null ? Colors.grey : null,
-        ),
-      ),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => _showGatewayUrlDialog(context, ref, settings),
-    );
-  }
-
-  void _showGatewayUrlDialog(BuildContext context, WidgetRef ref, SettingsState settings) {
-    final controller = TextEditingController(
-      text: settings.gatewayUrl ?? AppConstants.defaultGatewayUrl,
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Gateway URL'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'ws://localhost:18789',
-                labelText: 'WebSocket URL',
-                helperText: 'Enter the Gateway WebSocket URL',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.url,
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () {
-                controller.text = AppConstants.defaultGatewayUrl;
-              },
-              child: Text('Reset to default (${AppConstants.defaultGatewayUrl})'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final url = controller.text.trim();
-              if (url.isNotEmpty) {
-                await ref.read(settingsProvider.notifier).setGatewayUrl(url);
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== Authentication Section ====================
-
-  Widget _buildAuthTile(BuildContext context, WidgetRef ref, SettingsState settings) {
-    return ListTile(
-      leading: Icon(
-        settings.isAuthenticated ? Icons.verified_user : Icons.warning_amber,
-        color: settings.isAuthenticated ? Colors.green : Colors.orange,
-      ),
-      title: const Text('Authentication Status'),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            settings.isAuthenticated ? 'Device Paired' : 'Not Paired',
-          ),
-          if (settings.maskedDeviceToken != null)
-            Text(
-              'Token: ${settings.maskedDeviceToken}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          if (settings.maskedPublicKey != null)
-            Text(
-              'Key: ${settings.maskedPublicKey}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-        ],
-      ),
-      isThreeLine: settings.isAuthenticated,
-    );
-  }
-
-  Widget _buildClearAuthTile(BuildContext context, WidgetRef ref, SettingsState settings) {
-    return ListTile(
-      leading: const Icon(Icons.key_off),
-      title: const Text('Clear Authentication'),
-      subtitle: const Text('Remove device token and public key'),
-      enabled: settings.isAuthenticated,
-      onTap: settings.isAuthenticated
-          ? () => _showClearAuthDialog(context, ref)
-          : null,
-    );
-  }
-
-  void _showClearAuthDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Authentication?'),
-        content: const Text(
-          'This will remove your device token and public key. '
-          'You will need to pair with the Gateway again to continue.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              await ref.read(settingsProvider.notifier).clearAuthInfo();
-              if (context.mounted) Navigator.pop(context);
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.orange,
-            ),
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== Appearance Section ====================
-
-  Widget _buildThemeTile(BuildContext context, WidgetRef ref, SettingsState settings) {
-    return ListTile(
-      leading: Icon(settings.themeMode.icon),
-      title: const Text('Theme'),
-      subtitle: Text(settings.themeMode.displayName),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => _showThemeDialog(context, ref, settings),
-    );
-  }
-
-  void _showThemeDialog(BuildContext context, WidgetRef ref, SettingsState settings) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Choose Theme'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: AppThemeMode.values.map((mode) {
-            return RadioListTile<AppThemeMode>(
-              title: Row(
+          // Gateway Configuration Section
+          _buildSectionHeader(theme, 'Gateway Configuration'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(mode.icon, size: 20),
-                  const SizedBox(width: 12),
-                  Text(mode.displayName),
+                  TextField(
+                    controller: _gatewayUrlController,
+                    decoration: const InputDecoration(
+                      labelText: 'Gateway URL',
+                      hintText: 'wss://gateway.example.com',
+                      prefixIcon: Icon(Icons.link),
+                      helperText: 'WebSocket URL (ws:// or wss://)',
+                    ),
+                    keyboardType: TextInputType.url,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _deviceTokenController,
+                    decoration: const InputDecoration(
+                      labelText: 'Device Token',
+                      hintText: 'Paste your token here',
+                      prefixIcon: Icon(Icons.vpn_key),
+                      helperText: 'Optional: Skip pairing with existing token',
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _isSaving ? null : _saveSettings,
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.save),
+                          label: const Text('Save & Connect'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              value: mode,
-              groupValue: settings.themeMode,
-              onChanged: (value) {
-                if (value != null) {
-                  ref.read(settingsProvider.notifier).setThemeMode(value);
-                  Navigator.pop(context);
-                }
-              },
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLanguageTile(BuildContext context, WidgetRef ref, SettingsState settings) {
-    return ListTile(
-      leading: const Icon(Icons.language),
-      title: const Text('Language'),
-      subtitle: Text(AppLanguage.getDisplayName(settings.language)),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => _showLanguageDialog(context, ref, settings),
-    );
-  }
-
-  void _showLanguageDialog(BuildContext context, WidgetRef ref, SettingsState settings) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Choose Language'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: AppLanguage.supportedLanguages.map((lang) {
-            return RadioListTile<String>(
-              title: Text(AppLanguage.getDisplayName(lang)),
-              value: lang,
-              groupValue: settings.language,
-              onChanged: (value) {
-                if (value != null) {
-                  ref.read(settingsProvider.notifier).setLanguage(value);
-                  Navigator.pop(context);
-                }
-              },
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  // ==================== Data Section ====================
-
-  Widget _buildClearDataTile(BuildContext context, WidgetRef ref, SettingsState settings) {
-    return ListTile(
-      leading: const Icon(Icons.delete_forever, color: Colors.red),
-      title: const Text('Clear All Data'),
-      subtitle: const Text('Remove all cached data, credentials, and settings'),
-      onTap: () => _showClearDataDialog(context, ref),
-    );
-  }
-
-  void _showClearDataDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear All Data?'),
-        content: const Text(
-          'This will delete all cached data, credentials, and settings. '
-          'This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              await ref.read(settingsProvider.notifier).clearAllSettings();
-              if (context.mounted) Navigator.pop(context);
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
             ),
-            child: const Text('Clear'),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Connection Status Section
+          _buildSectionHeader(theme, 'Connection Status'),
+          Card(
+            child: ListTile(
+              leading: Icon(
+                settings.gatewayUrl != null && settings.gatewayUrl!.isNotEmpty
+                    ? Icons.check_circle
+                    : Icons.cancel,
+                color: settings.gatewayUrl != null && settings.gatewayUrl!.isNotEmpty
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.error,
+              ),
+              title: Text(
+                settings.gatewayUrl != null && settings.gatewayUrl!.isNotEmpty
+                    ? 'Gateway Configured'
+                    : 'Not Configured',
+              ),
+              subtitle: Text(
+                settings.gatewayUrl ?? 'Enter Gateway URL above',
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Theme Section
+          _buildSectionHeader(theme, 'Appearance'),
+          Card(
+            child: Column(
+              children: [
+                RadioListTile<ThemeMode>(
+                  title: const Text('System Default'),
+                  value: ThemeMode.system,
+                  groupValue: settings.themeMode,
+                  onChanged: (value) => _setThemeMode(value!),
+                ),
+                RadioListTile<ThemeMode>(
+                  title: const Text('Light'),
+                  value: ThemeMode.light,
+                  groupValue: settings.themeMode,
+                  onChanged: (value) => _setThemeMode(value!),
+                ),
+                RadioListTile<ThemeMode>(
+                  title: const Text('Dark'),
+                  value: ThemeMode.dark,
+                  groupValue: settings.themeMode,
+                  onChanged: (value) => _setThemeMode(value!),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // About Section
+          _buildSectionHeader(theme, 'About'),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  title: const Text('ClawChat'),
+                  subtitle: const Text('Direct & Secure AI Chat'),
+                  trailing: const Text('v1.0.0'),
+                ),
+                ListTile(
+                  title: const Text('OpenClaw'),
+                  subtitle: const Text('https://openclaw.ai'),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () {
+                    // Open URL
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  // ==================== About Section ====================
-
-  Widget _buildAboutTile() {
-    return ListTile(
-      leading: const Icon(Icons.info),
-      title: const Text('About'),
-      subtitle: Text('${AppConstants.appName} v${AppConstants.appVersion}'),
+  Widget _buildSectionHeader(ThemeData theme, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: theme.textTheme.titleSmall?.copyWith(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
+  }
+
+  Future<void> _saveSettings() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final gatewayUrl = _gatewayUrlController.text.trim();
+      final deviceToken = _deviceTokenController.text.trim();
+
+      if (gatewayUrl.isNotEmpty) {
+        await ref.read(settingsProvider.notifier).setGatewayUrl(gatewayUrl);
+      }
+
+      if (deviceToken.isNotEmpty) {
+        await ref.read(settingsProvider.notifier).setDeviceToken(deviceToken);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Settings saved')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _setThemeMode(ThemeMode mode) async {
+    await ref.read(settingsProvider.notifier).setThemeMode(mode);
   }
 }
