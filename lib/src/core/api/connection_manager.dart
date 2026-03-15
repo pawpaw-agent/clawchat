@@ -233,7 +233,7 @@ class ConnectionManager {
     client.onStateChange(_handleClientStateChange);
 
     // Monitor network status
-    networkMonitor.onStatusChange(_handleNetworkStatusChange);
+    networkMonitor.onStatusChanged(_handleNetworkStatusChange);
     networkMonitor.onRestoration(_handleNetworkRestoration);
 
     // Monitor reconnect handler events
@@ -372,10 +372,10 @@ class ConnectionManager {
   }
 
   /// Dispose resources
-  Future<void> dispose() async {
-    await disconnect();
-    await networkMonitor.dispose();
-    await reconnectHandler.dispose();
+  void dispose() {
+    disconnect();
+    networkMonitor.dispose();
+    reconnectHandler.dispose();
     _stateCallbacks.clear();
     _logger.i('ConnectionManager disposed');
   }

@@ -136,6 +136,7 @@ class ErrorBanner extends StatelessWidget {
       ServerException() => Colors.amber,
       ValidationException() => Colors.teal,
       GenericAppException() => theme.colorScheme.error,
+      _ => theme.colorScheme.error,
     };
   }
 
@@ -149,6 +150,7 @@ class ErrorBanner extends StatelessWidget {
       ServerException() => Icons.dns,
       ValidationException() => Icons.warning_amber,
       GenericAppException() => Icons.error_outline,
+      _ => Icons.error_outline,
     };
   }
 }

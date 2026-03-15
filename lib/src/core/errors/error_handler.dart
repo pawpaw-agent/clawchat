@@ -230,6 +230,7 @@ class ErrorHandler {
       ServerException() => Colors.amber,
       ValidationException() => Colors.teal,
       GenericAppException() => Colors.grey,
+      _ => Colors.grey,
     };
   }
 
@@ -244,6 +245,7 @@ class ErrorHandler {
       ServerException() => Icons.dns,
       ValidationException() => Icons.warning_amber,
       GenericAppException() => Icons.error_outline,
+      _ => Icons.error_outline,
     };
   }
 }
