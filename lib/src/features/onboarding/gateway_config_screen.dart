@@ -7,6 +7,31 @@ import 'pairing_screen.dart';
 import '../../core/api/gateway_client.dart';
 import '../../core/api/auth_service.dart';
 
+/// Convert HTTP URL to WebSocket URL
+/// - http:// → ws://
+/// - https:// → wss://
+/// - ws:// or wss:// → unchanged
+String _toWebSocketUrl(String url) {
+  final trimmed = url.trim();
+  
+  // Already WebSocket URL
+  if (trimmed.startsWith('ws://') || trimmed.startsWith('wss://')) {
+    return trimmed;
+  }
+  
+  // Convert HTTP to WebSocket
+  if (trimmed.startsWith('http://')) {
+    return trimmed.replaceFirst('http://', 'ws://');
+  }
+  
+  if (trimmed.startsWith('https://')) {
+    return trimmed.replaceFirst('https://', 'wss://');
+  }
+  
+  // No protocol specified, default to wss://
+  return 'wss://$trimmed';
+}
+
 /// Gateway configuration screen
 class GatewayConfigScreen extends ConsumerStatefulWidget {
   final String initialUrl;
@@ -58,7 +83,10 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Example: https://gateway.example.com or http://192.168.1.100:8080',
+              'Examples:\n'
+              '• https://gateway.example.com\n'
+              '• http://192.168.1.100:18789\n'
+              '• ws://192.168.1.100:18789',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.6),
               ),
@@ -72,6 +100,7 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
                 labelText: 'Gateway URL',
                 hintText: 'https://your-gateway.com',
                 prefixIcon: const Icon(Icons.link),
+                helperText: 'http:// → ws://, https:// → wss://',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -172,22 +201,25 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
     });
 
     try {
-      final url = _urlController.text.trim();
+      final inputUrl = _urlController.text.trim();
       
       // Validate URL format
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      if (inputUrl.isEmpty) {
         setState(() {
-          _testResult = 'URL must start with http:// or https://';
+          _testResult = 'Please enter a Gateway URL';
           _testSuccess = false;
           _isTesting = false;
         });
         return;
       }
 
+      // Convert to WebSocket URL
+      final wsUrl = _toWebSocketUrl(inputUrl);
+      
       // Try to create a Gateway client and test connection
       final authService = AuthService();
       final client = GatewayClient(
-        gatewayUrl: url,
+        gatewayUrl: wsUrl,
         authService: authService,
       );
 
@@ -235,10 +267,13 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
   }
 
   void _continue() {
+    // Convert to WebSocket URL before passing to PairingScreen
+    final wsUrl = _toWebSocketUrl(_urlController.text.trim());
+    
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => PairingScreen(
-          gatewayUrl: _urlController.text.trim(),
+          gatewayUrl: wsUrl,
         ),
       ),
     );
