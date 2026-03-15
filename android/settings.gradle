@@ -24,16 +24,3 @@ plugins {
 }
 
 include ":app"
-
-// Fix for AGP 8.x: Set namespace for Flutter plugins that don't specify one
-gradle.beforeProject { project ->
-    project.configure {
-        if (project.hasProperty('android')) {
-            project.android {
-                if (namespace == null) {
-                    namespace project.group.toString()
-                }
-            }
-        }
-    }
-}

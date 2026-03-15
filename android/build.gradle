@@ -21,6 +21,12 @@ allprojects {
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+    // Fix for AGP 8.x: Set namespace for plugins that don't specify one
+    afterEvaluate {
+        if (project.hasProperty('android') && project.android.namespace == null) {
+            project.android.namespace = project.group.toString()
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
