@@ -76,7 +76,7 @@ class SessionTile extends StatelessWidget {
         title: _buildTitle(theme),
         subtitle: _buildSubtitle(theme),
         trailing: _buildTrailing(theme),
-        tileColor: isActive ? colorScheme.primaryContainer.withValues(alpha: 0.3) : null,
+        tileColor: isActive ? colorScheme.primaryContainer.withOpacity(0.3) : null,
         onTap: onTap,
         onLongPress: () => _showContextMenu(context),
       ),
@@ -90,7 +90,7 @@ class SessionTile extends StatelessWidget {
     return Stack(
       children: [
         CircleAvatar(
-          backgroundColor: agentColor.withValues(alpha: 0.2),
+          backgroundColor: agentColor.withOpacity(0.2),
           child: Icon(
             session.isArchived ? Icons.archive : Icons.chat_bubble,
             color: agentColor,

@@ -36,9 +36,11 @@ class SessionCollection {
   int? lastActiveAtMs;
 
   /// Whether session is archived
+  @Index()
   bool isArchived = false;
 
   /// Whether session is pinned
+  @Index()
   bool isPinned = false;
 
   /// Message count in this session

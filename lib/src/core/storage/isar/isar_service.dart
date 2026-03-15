@@ -1,7 +1,6 @@
 /// Isar database service for local persistence
 library;
 
-import 'dart:convert';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:logger/logger.dart';

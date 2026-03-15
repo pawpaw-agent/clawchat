@@ -156,7 +156,7 @@ class _StreamingTextState extends State<StreamingText> {
               text: widget.cursorChar,
               style: (widget.style ?? const TextStyle()).copyWith(
                 color: (widget.style?.color ?? Theme.of(context).colorScheme.onSurface)
-                    .withValues(alpha: 0.7),
+                    .withOpacity(0.7),
               ),
             ),
           ],

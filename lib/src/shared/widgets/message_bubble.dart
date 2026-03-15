@@ -136,29 +136,29 @@ class _MarkdownContent extends StatelessWidget {
           fontFamily: 'monospace',
           fontSize: textStyle?.fontSize ?? 14,
           backgroundColor: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.black.withValues(alpha: 0.05),
+              ? Colors.white.withOpacity(0.1)
+              : Colors.black.withOpacity(0.05),
         ),
         codeblockPadding: const EdgeInsets.all(12),
         codeblockDecoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.black.withValues(alpha: 0.03),
+              ? Colors.white.withOpacity(0.05)
+              : Colors.black.withOpacity(0.03),
           borderRadius: BorderRadius.circular(8),
         ),
         blockquote: TextStyle(
-          color: textColor.withValues(alpha: 0.7),
+          color: textColor.withOpacity(0.7),
           fontStyle: FontStyle.italic,
         ),
         blockquoteDecoration: BoxDecoration(
-          border: BorderDirectional(
-            start: BorderSide(
+          border: Border(
+            left: BorderSide(
               color: Theme.of(context).colorScheme.primary,
               width: 4,
             ),
           ),
         ),
-        blockquotePadding: const EdgeInsetsDirectional.only(start: 12),
+        blockquotePadding: const EdgeInsets.only(left: 12),
         listBullet: TextStyle(color: textColor),
         tableBody: TextStyle(color: textColor),
         tableHead: TextStyle(color: textColor, fontWeight: FontWeight.bold),

@@ -107,7 +107,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             'Start a conversation with the AI assistant',
             style: TextStyle(
-              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.7),
               fontSize: 12,
             ),
           ),
@@ -163,7 +163,7 @@ class _MessageItem extends StatelessWidget {
                 _formatTime(message.createdAt!),
                 style: TextStyle(
                   fontSize: 10,
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.7),
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.7),
                 ),
               ),
             ),

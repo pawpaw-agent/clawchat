@@ -3,32 +3,11 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:highlight/highlight.dart' as highlight;
-import 'package:highlight/languages/dart.dart';
-import 'package:highlight/languages/python.dart';
-import 'package:highlight/languages/javascript.dart';
-import 'package:highlight/languages/typescript.dart';
-import 'package:highlight/languages/json.dart';
-import 'package:highlight/languages/yaml.dart';
-import 'package:highlight/languages/bash.dart';
-import 'package:highlight/languages/markdown.dart';
-import 'package:highlight/languages/sql.dart';
-import 'package:highlight/languages/xml.dart';
 
 /// Initialize supported languages for syntax highlighting
+/// Note: highlight package auto-registers languages when imported
 void initHighlightLanguages() {
-  highlight.registerLanguage('dart', dart);
-  highlight.registerLanguage('python', python);
-  highlight.registerLanguage('javascript', javascript);
-  highlight.registerLanguage('typescript', typescript);
-  highlight.registerLanguage('json', json);
-  highlight.registerLanguage('yaml', yaml);
-  highlight.registerLanguage('bash', bash);
-  highlight.registerLanguage('sh', bash);
-  highlight.registerLanguage('markdown', markdown);
-  highlight.registerLanguage('md', markdown);
-  highlight.registerLanguage('sql', sql);
-  highlight.registerLanguage('xml', xml);
-  highlight.registerLanguage('html', xml);
+  // No-op: languages are auto-registered by the highlight package
 }
 
 /// Widget that displays syntax-highlighted text
@@ -61,54 +40,54 @@ class HighlightText extends StatelessWidget {
         color: colorScheme.onSurface,
         backgroundColor: Colors.transparent,
       ),
-      'keyword': TextStyle(color: const Color(0xFFC792EA)), // Purple
-      'built_in': TextStyle(color: const Color(0xFF82AAFF)), // Blue
-      'type': TextStyle(color: const Color(0xFFFFCB6B)), // Yellow
-      'literal': TextStyle(color: const Color(0xFFF78C6C)), // Orange
-      'number': TextStyle(color: const Color(0xFFF78C6C)), // Orange
-      'operator': TextStyle(color: const Color(0xFF89DDFF)), // Cyan
-      'punctuation': TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
-      'property': TextStyle(color: const Color(0xFFFFCB6B)), // Yellow
-      'regexp': TextStyle(color: const Color(0xFF89DDFF)), // Cyan
-      'string': TextStyle(color: const Color(0xFFC3E88D)), // Green
-      'char.escape': TextStyle(color: const Color(0xFF89DDFF)), // Cyan
-      'subst': TextStyle(color: const Color(0xFFF78C6C)), // Orange
-      'symbol': TextStyle(color: const Color(0xFF82AAFF)), // Blue
-      'variable': TextStyle(color: const Color(0xFFFFCB6B)), // Yellow
-      'variable.language': TextStyle(color: const Color(0xFFC792EA)), // Purple
-      'variable.constant': TextStyle(color: const Color(0xFFF78C6C)), // Orange
-      'title': TextStyle(color: const Color(0xFF82AAFF)), // Blue
-      'title.class': TextStyle(color: const Color(0xFFFFCB6B)), // Yellow
-      'title.function': TextStyle(color: const Color(0xFF82AAFF)), // Blue
-      'params': TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.8)),
-      'comment': TextStyle(
-        color: const Color(0xFF546E7A), // Grey
+      'keyword': const TextStyle(color: Color(0xFFC792EA)), // Purple
+      'built_in': const TextStyle(color: Color(0xFF82AAFF)), // Blue
+      'type': const TextStyle(color: Color(0xFFFFCB6B)), // Yellow
+      'literal': const TextStyle(color: Color(0xFFF78C6C)), // Orange
+      'number': const TextStyle(color: Color(0xFFF78C6C)), // Orange
+      'operator': const TextStyle(color: Color(0xFF89DDFF)), // Cyan
+      'punctuation': TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+      'property': const TextStyle(color: Color(0xFFFFCB6B)), // Yellow
+      'regexp': const TextStyle(color: Color(0xFF89DDFF)), // Cyan
+      'string': const TextStyle(color: Color(0xFFC3E88D)), // Green
+      'char.escape': const TextStyle(color: Color(0xFF89DDFF)), // Cyan
+      'subst': const TextStyle(color: Color(0xFFF78C6C)), // Orange
+      'symbol': const TextStyle(color: Color(0xFF82AAFF)), // Blue
+      'variable': const TextStyle(color: Color(0xFFFFCB6B)), // Yellow
+      'variable.language': const TextStyle(color: Color(0xFFC792EA)), // Purple
+      'variable.constant': const TextStyle(color: Color(0xFFF78C6C)), // Orange
+      'title': const TextStyle(color: Color(0xFF82AAFF)), // Blue
+      'title.class': const TextStyle(color: Color(0xFFFFCB6B)), // Yellow
+      'title.function': const TextStyle(color: Color(0xFF82AAFF)), // Blue
+      'params': TextStyle(color: colorScheme.onSurface.withOpacity(0.8)),
+      'comment': const TextStyle(
+        color: Color(0xFF546E7A), // Grey
         fontStyle: FontStyle.italic,
       ),
-      'doctag': TextStyle(color: const Color(0xFFC792EA)), // Purple
-      'meta': TextStyle(color: const Color(0xFF82AAFF)), // Blue
-      'meta.prompt': TextStyle(color: const Color(0xFF546E7A)), // Grey
-      'meta.keyword': TextStyle(color: const Color(0xFFC792EA)), // Purple
-      'meta.string': TextStyle(color: const Color(0xFFC3E88D)), // Green
-      'section': TextStyle(color: const Color(0xFF82AAFF)), // Blue
-      'tag': TextStyle(color: const Color(0xFFFF5370)), // Red
-      'name': TextStyle(color: const Color(0xFFFFCB6B)), // Yellow
-      'attr': TextStyle(color: const Color(0xFFFFCB6B)), // Yellow
-      'attribute': TextStyle(color: const Color(0xFFC792EA)), // Purple
-      'bullet': TextStyle(color: const Color(0xFF89DDFF)), // Cyan
-      'code': TextStyle(color: const Color(0xFFC3E88D)), // Green
-      'emphasis': TextStyle(fontStyle: FontStyle.italic),
-      'strong': TextStyle(fontWeight: FontWeight.bold),
-      'formula': TextStyle(color: const Color(0xFF89DDFF)), // Cyan
-      'link': TextStyle(color: const Color(0xFF82AAFF)), // Blue
-      'quote': TextStyle(color: const Color(0xFF546E7A)), // Grey
-      'selector-tag': TextStyle(color: const Color(0xFFFF5370)), // Red
-      'selector-id': TextStyle(color: const Color(0xFF82AAFF)), // Blue
-      'selector-class': TextStyle(color: const Color(0xFFC3E88D)), // Green
-      'selector-attr': TextStyle(color: const Color(0xFFFFCB6B)), // Yellow
-      'selector-pseudo': TextStyle(color: const Color(0xFFC792EA)), // Purple
-      'addition': TextStyle(color: const Color(0xFFC3E88D)), // Green
-      'deletion': TextStyle(color: const Color(0xFFFF5370)), // Red
+      'doctag': const TextStyle(color: Color(0xFFC792EA)), // Purple
+      'meta': const TextStyle(color: Color(0xFF82AAFF)), // Blue
+      'meta.prompt': const TextStyle(color: Color(0xFF546E7A)), // Grey
+      'meta.keyword': const TextStyle(color: Color(0xFFC792EA)), // Purple
+      'meta.string': const TextStyle(color: Color(0xFFC3E88D)), // Green
+      'section': const TextStyle(color: Color(0xFF82AAFF)), // Blue
+      'tag': const TextStyle(color: Color(0xFFFF5370)), // Red
+      'name': const TextStyle(color: Color(0xFFFFCB6B)), // Yellow
+      'attr': const TextStyle(color: Color(0xFFFFCB6B)), // Yellow
+      'attribute': const TextStyle(color: Color(0xFFC792EA)), // Purple
+      'bullet': const TextStyle(color: Color(0xFF89DDFF)), // Cyan
+      'code': const TextStyle(color: Color(0xFFC3E88D)), // Green
+      'emphasis': const TextStyle(fontStyle: FontStyle.italic),
+      'strong': const TextStyle(fontWeight: FontWeight.bold),
+      'formula': const TextStyle(color: Color(0xFF89DDFF)), // Cyan
+      'link': const TextStyle(color: Color(0xFF82AAFF)), // Blue
+      'quote': const TextStyle(color: Color(0xFF546E7A)), // Grey
+      'selector-tag': const TextStyle(color: Color(0xFFFF5370)), // Red
+      'selector-id': const TextStyle(color: Color(0xFF82AAFF)), // Blue
+      'selector-class': const TextStyle(color: Color(0xFFC3E88D)), // Green
+      'selector-attr': const TextStyle(color: Color(0xFFFFCB6B)), // Yellow
+      'selector-pseudo': const TextStyle(color: Color(0xFFC792EA)), // Purple
+      'addition': const TextStyle(color: Color(0xFFC3E88D)), // Green
+      'deletion': const TextStyle(color: Color(0xFFFF5370)), // Red
     };
   }
 
@@ -120,54 +99,54 @@ class HighlightText extends StatelessWidget {
         color: colorScheme.onSurface,
         backgroundColor: Colors.transparent,
       ),
-      'keyword': TextStyle(color: const Color(0xFF7B1FA2)), // Purple
-      'built_in': TextStyle(color: const Color(0xFF1565C0)), // Blue
-      'type': TextStyle(color: const Color(0xFFF57C00)), // Orange
-      'literal': TextStyle(color: const Color(0xFFD32F2F)), // Red
-      'number': TextStyle(color: const Color(0xFFD32F2F)), // Red
-      'operator': TextStyle(color: const Color(0xFF00897B)), // Teal
-      'punctuation': TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
-      'property': TextStyle(color: const Color(0xFFF57C00)), // Orange
-      'regexp': TextStyle(color: const Color(0xFF00897B)), // Teal
-      'string': TextStyle(color: const Color(0xFF388E3C)), // Green
-      'char.escape': TextStyle(color: const Color(0xFF00897B)), // Teal
-      'subst': TextStyle(color: const Color(0xFFD32F2F)), // Red
-      'symbol': TextStyle(color: const Color(0xFF1565C0)), // Blue
-      'variable': TextStyle(color: const Color(0xFFF57C00)), // Orange
-      'variable.language': TextStyle(color: const Color(0xFF7B1FA2)), // Purple
-      'variable.constant': TextStyle(color: const Color(0xFFD32F2F)), // Red
-      'title': TextStyle(color: const Color(0xFF1565C0)), // Blue
-      'title.class': TextStyle(color: const Color(0xFFF57C00)), // Orange
-      'title.function': TextStyle(color: const Color(0xFF1565C0)), // Blue
-      'params': TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.8)),
-      'comment': TextStyle(
-        color: const Color(0xFF9E9E9E), // Grey
+      'keyword': const TextStyle(color: Color(0xFF7B1FA2)), // Purple
+      'built_in': const TextStyle(color: Color(0xFF1565C0)), // Blue
+      'type': const TextStyle(color: Color(0xFFF57C00)), // Orange
+      'literal': const TextStyle(color: Color(0xFFD32F2F)), // Red
+      'number': const TextStyle(color: Color(0xFFD32F2F)), // Red
+      'operator': const TextStyle(color: Color(0xFF00897B)), // Teal
+      'punctuation': TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+      'property': const TextStyle(color: Color(0xFFF57C00)), // Orange
+      'regexp': const TextStyle(color: Color(0xFF00897B)), // Teal
+      'string': const TextStyle(color: Color(0xFF388E3C)), // Green
+      'char.escape': const TextStyle(color: Color(0xFF00897B)), // Teal
+      'subst': const TextStyle(color: Color(0xFFD32F2F)), // Red
+      'symbol': const TextStyle(color: Color(0xFF1565C0)), // Blue
+      'variable': const TextStyle(color: Color(0xFFF57C00)), // Orange
+      'variable.language': const TextStyle(color: Color(0xFF7B1FA2)), // Purple
+      'variable.constant': const TextStyle(color: Color(0xFFD32F2F)), // Red
+      'title': const TextStyle(color: Color(0xFF1565C0)), // Blue
+      'title.class': const TextStyle(color: Color(0xFFF57C00)), // Orange
+      'title.function': const TextStyle(color: Color(0xFF1565C0)), // Blue
+      'params': TextStyle(color: colorScheme.onSurface.withOpacity(0.8)),
+      'comment': const TextStyle(
+        color: Color(0xFF9E9E9E), // Grey
         fontStyle: FontStyle.italic,
       ),
-      'doctag': TextStyle(color: const Color(0xFF7B1FA2)), // Purple
-      'meta': TextStyle(color: const Color(0xFF1565C0)), // Blue
-      'meta.prompt': TextStyle(color: const Color(0xFF9E9E9E)), // Grey
-      'meta.keyword': TextStyle(color: const Color(0xFF7B1FA2)), // Purple
-      'meta.string': TextStyle(color: const Color(0xFF388E3C)), // Green
-      'section': TextStyle(color: const Color(0xFF1565C0)), // Blue
-      'tag': TextStyle(color: const Color(0xFFD32F2F)), // Red
-      'name': TextStyle(color: const Color(0xFFF57C00)), // Orange
-      'attr': TextStyle(color: const Color(0xFFF57C00)), // Orange
-      'attribute': TextStyle(color: const Color(0xFF7B1FA2)), // Purple
-      'bullet': TextStyle(color: const Color(0xFF00897B)), // Teal
-      'code': TextStyle(color: const Color(0xFF388E3C)), // Green
-      'emphasis': TextStyle(fontStyle: FontStyle.italic),
-      'strong': TextStyle(fontWeight: FontWeight.bold),
-      'formula': TextStyle(color: const Color(0xFF00897B)), // Teal
-      'link': TextStyle(color: const Color(0xFF1565C0)), // Blue
-      'quote': TextStyle(color: const Color(0xFF9E9E9E)), // Grey
-      'selector-tag': TextStyle(color: const Color(0xFFD32F2F)), // Red
-      'selector-id': TextStyle(color: const Color(0xFF1565C0)), // Blue
-      'selector-class': TextStyle(color: const Color(0xFF388E3C)), // Green
-      'selector-attr': TextStyle(color: const Color(0xFFF57C00)), // Orange
-      'selector-pseudo': TextStyle(color: const Color(0xFF7B1FA2)), // Purple
-      'addition': TextStyle(color: const Color(0xFF388E3C)), // Green
-      'deletion': TextStyle(color: const Color(0xFFD32F2F)), // Red
+      'doctag': const TextStyle(color: Color(0xFF7B1FA2)), // Purple
+      'meta': const TextStyle(color: Color(0xFF1565C0)), // Blue
+      'meta.prompt': const TextStyle(color: Color(0xFF9E9E9E)), // Grey
+      'meta.keyword': const TextStyle(color: Color(0xFF7B1FA2)), // Purple
+      'meta.string': const TextStyle(color: Color(0xFF388E3C)), // Green
+      'section': const TextStyle(color: Color(0xFF1565C0)), // Blue
+      'tag': const TextStyle(color: Color(0xFFD32F2F)), // Red
+      'name': const TextStyle(color: Color(0xFFF57C00)), // Orange
+      'attr': const TextStyle(color: Color(0xFFF57C00)), // Orange
+      'attribute': const TextStyle(color: Color(0xFF7B1FA2)), // Purple
+      'bullet': const TextStyle(color: Color(0xFF00897B)), // Teal
+      'code': const TextStyle(color: Color(0xFF388E3C)), // Green
+      'emphasis': const TextStyle(fontStyle: FontStyle.italic),
+      'strong': const TextStyle(fontWeight: FontWeight.bold),
+      'formula': const TextStyle(color: Color(0xFF00897B)), // Teal
+      'link': const TextStyle(color: Color(0xFF1565C0)), // Blue
+      'quote': const TextStyle(color: Color(0xFF9E9E9E)), // Grey
+      'selector-tag': const TextStyle(color: Color(0xFFD32F2F)), // Red
+      'selector-id': const TextStyle(color: Color(0xFF1565C0)), // Blue
+      'selector-class': const TextStyle(color: Color(0xFF388E3C)), // Green
+      'selector-attr': const TextStyle(color: Color(0xFFF57C00)), // Orange
+      'selector-pseudo': const TextStyle(color: Color(0xFF7B1FA2)), // Purple
+      'addition': const TextStyle(color: Color(0xFF388E3C)), // Green
+      'deletion': const TextStyle(color: Color(0xFFD32F2F)), // Red
     };
   }
 
@@ -199,17 +178,19 @@ class HighlightText extends StatelessWidget {
     List<TextSpan> spans = [];
 
     for (final node in nodes) {
-      if (node is highlight.TextNode) {
+      final nodeClassName = node.className;
+      if (node.children?.isEmpty ?? true) {
+        // Leaf node - has text
+        final text = node.toString();
         spans.add(TextSpan(
-          text: node.text,
-          style: theme['root']?.merge(style) ?? style,
+          text: text,
+          style: theme[nodeClassName]?.merge(style) ?? style,
         ));
-      } else if (node is highlight.ElementNode) {
+      } else {
+        // Has children
         spans.add(TextSpan(
-          style: theme[node.className] ?? style,
-          children: node.children != null
-              ? [_convertNodes(node.children!, theme)]
-              : null,
+          style: theme[nodeClassName] ?? style,
+          children: [_convertNodes(node.children!, theme)],
         ));
       }
     }

@@ -80,7 +80,7 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
       preferredSize: const Size.fromHeight(24),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        color: Colors.orange.withValues(alpha: 0.1),
+        color: Colors.orange.withOpacity(0.1),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -188,7 +188,7 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
           Icon(
             Icons.chat_bubble_outline,
             size: 64,
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
