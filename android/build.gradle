@@ -26,12 +26,3 @@ subprojects {
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
-
-// Fix for AGP 8.x: Set namespace for plugins that don't specify one
-gradle.projectsEvaluated {
-    subprojects.each { subProject ->
-        if (subProject.hasProperty('android') && subProject.android.namespace == null) {
-            subProject.android.namespace = subProject.group.toString()
-        }
-    }
-}
