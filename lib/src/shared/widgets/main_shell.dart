@@ -3,10 +3,10 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../chat/chat_screen.dart';
-import '../sessions/session_list_screen.dart';
-import '../nodes/node_list_screen.dart';
-import '../settings/settings_screen.dart';
+import '../../features/chat/chat_screen.dart';
+import '../../features/sessions/session_list_screen.dart';
+import '../../features/nodes/node_list_screen.dart';
+import '../../features/settings/settings_screen.dart';
 
 /// Main shell widget with bottom navigation
 class MainShell extends StatefulWidget {
@@ -24,17 +24,18 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   late int _currentIndex;
   
-  final List<Widget> _screens = const [
-    ChatScreen(),
-    SessionListScreen(),
-    NodeListScreen(),
-    SettingsScreen(),
-  ];
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _screens = [
+      const ChatScreen(),
+      const SessionListScreen(),
+      const NodeListScreen(),
+      const SettingsScreen(),
+    ];
   }
 
   @override

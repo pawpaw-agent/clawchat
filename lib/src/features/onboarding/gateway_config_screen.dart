@@ -193,14 +193,10 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
 
       // Attempt to connect with a short timeout
       try {
-        await client.connect(
-          version: '1.0.0',
-          token: null,
-          locale: 'zh-CN',
-        ).timeout(const Duration(seconds: 5));
+        await client.connect().timeout(const Duration(seconds: 5));
         
         // If we get here, connection was successful
-        await client.disconnect();
+        client.disconnect();
         
         if (mounted) {
           setState(() {
