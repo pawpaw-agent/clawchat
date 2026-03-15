@@ -2,11 +2,10 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-    id "com.google.gms.google-services"
 }
 
 def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
+def localPropertiesFile = rootProperties.file('local.properties')
 if (localPropertiesFile.exists()) {
     localPropertiesFile.withReader('UTF-8') { reader ->
         localProperties.load(reader)
@@ -44,7 +43,7 @@ android {
     defaultConfig {
         applicationId "com.openclaw.clawchat"
         minSdkVersion flutter.minSdkVersion
-        targetSdk flutter.targetSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
@@ -58,15 +57,4 @@ android {
 
 flutter {
     source '../..'
-}
-
-dependencies {
-    // Firebase BOM - manages versions automatically
-    implementation platform('com.google.firebase:firebase-bom:33.0.0')
-    
-    // Firebase Cloud Messaging
-    implementation 'com.google.firebase:firebase-messaging'
-    
-    // Firebase Analytics (optional, recommended)
-    implementation 'com.google.firebase:firebase-analytics'
 }

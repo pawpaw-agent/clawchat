@@ -10,6 +10,7 @@ import 'gateway_client.dart';
 import 'gateway_protocol.dart';
 import 'network_monitor.dart';
 import 'reconnect_handler.dart';
+import '../errors/app_exception.dart';
 
 /// Configuration for ConnectionManager
 class ConnectionConfig {
@@ -56,7 +57,7 @@ class ManagedConnectionState {
     this.lastError,
   });
 
-  bool get isConnected => connectionState == ConnectionState.authenticated;
+  bool get isConnected => connectionState == GatewayConnectionState.authenticated;
   bool get hasNetwork => networkStatus.isConnected;
   bool get canSend => isConnected && hasNetwork && !isReconnecting;
 
@@ -80,7 +81,7 @@ class ConnectionManager {
 
   // State
   ManagedConnectionState _state = const ManagedConnectionState(
-    connectionState: ConnectionState.disconnected,
+    connectionState: GatewayConnectionState.disconnected,
     networkStatus: NetworkStatus.disconnected,
   );
   
@@ -95,11 +96,8 @@ class ConnectionManager {
   StreamSubscription? _clientStateSubscription;
   StreamSubscription? _eventSubscription;
   StreamSubscription? _networkSubscription;
-  StreamSubscription? _reconnectSubscription;
 
   // Handshake parameters
-  String? _storedVersion;
-  String? _storedToken;
   String _storedLocale = 'zh-CN';
 
   ConnectionManager({
@@ -177,7 +175,7 @@ class ConnectionManager {
     await client.disconnect();
 
     _updateState(_state.copyWith(
-      connectionState: ConnectionState.disconnected,
+      connectionState: GatewayConnectionState.disconnected,
     ));
 
     _logger.i('Disconnected');
@@ -251,7 +249,7 @@ class ConnectionManager {
     String locale,
   ) async {
     _updateState(_state.copyWith(
-      connectionState: ConnectionState.connecting,
+      connectionState: GatewayConnectionState.connecting,
     ));
 
     try {
@@ -271,7 +269,7 @@ class ConnectionManager {
       _startHeartbeatMonitoring();
 
       _updateState(_state.copyWith(
-        connectionState: ConnectionState.authenticated,
+        connectionState: GatewayConnectionState.authenticated,
         pendingMessages: reconnectHandler.pendingCount,
       ));
 
@@ -279,7 +277,7 @@ class ConnectionManager {
     } catch (e) {
       _logger.e('Connection failed', error: e);
       _updateState(_state.copyWith(
-        connectionState: ConnectionState.error,
+        connectionState: GatewayConnectionState.error,
         lastError: e.toString(),
       ));
 
@@ -295,7 +293,7 @@ class ConnectionManager {
   void _handleClientStateChange(ConnectionState newState) {
     _logger.d('Client state changed: $newState');
 
-    if (newState == ConnectionState.disconnected) {
+    if (newState == GatewayConnectionState.disconnected) {
       // Connection lost - pause sending
       reconnectHandler.handleDisconnection();
     }
@@ -317,8 +315,8 @@ class ConnectionManager {
     _logger.i('Network restored: ${previous.connectionType} -> ${current.connectionType}');
 
     // If we're disconnected but should be connected, trigger reconnect
-    if (_state.connectionState == ConnectionState.disconnected ||
-        _state.connectionState == ConnectionState.error) {
+    if (_state.connectionState == GatewayConnectionState.disconnected ||
+        _state.connectionState == GatewayConnectionState.error) {
       reconnectHandler.handleNetworkRestoration();
     }
   }

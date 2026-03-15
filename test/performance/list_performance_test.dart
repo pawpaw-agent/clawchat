@@ -1,7 +1,6 @@
 // Performance tests for list optimization
 // Run with: flutter test test/performance/list_performance_test.dart --profile
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:clawchat/src/core/utils/list_optimizer.dart';
 import 'package:clawchat/src/core/models/message.dart';

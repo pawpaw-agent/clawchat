@@ -5,7 +5,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:uuid/Uuid.dart';
+import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:logger/logger.dart';
 
@@ -29,7 +29,7 @@ class GatewayClient {
   final Map<String, Completer<ResponseFrame>> _pendingRequests = {};
   final StreamController<EventFrame> _eventController = StreamController.broadcast();
   
-  ConnectionState _state = ConnectionState.disconnected;
+  ConnectionState _state = GatewayConnectionState.disconnected;
   final List<ConnectionStateCallback> _stateCallbacks = [];
   
   String? _challengeNonce;
@@ -53,10 +53,10 @@ class GatewayClient {
   Stream<EventFrame> get eventStream => _eventController.stream;
 
   /// Whether client is connected
-  bool get isConnected => _state == ConnectionState.connected;
+  bool get isConnected => _state == GatewayConnectionState.connected;
 
   /// Whether client is authenticated
-  bool get isAuthenticated => _state == ConnectionState.authenticated;
+  bool get isAuthenticated => _state == GatewayConnectionState.authenticated;
 
   /// Subscribe to connection state changes
   void onStateChange(ConnectionStateCallback callback) {
@@ -70,14 +70,14 @@ class GatewayClient {
 
   /// Connect to gateway
   Future<void> connect() async {
-    if (_state != ConnectionState.disconnected) {
+    if (_state != GatewayConnectionState.disconnected) {
       throw WebSocketException(
         type: WebSocketErrorType.protocolError,
         details: 'Already connecting or connected',
       );
     }
 
-    _setState(ConnectionState.connecting);
+    _setState(GatewayConnectionState.connecting);
     _logger.i('Connecting to gateway: $gatewayUrl');
 
     try {
@@ -85,7 +85,7 @@ class GatewayClient {
       _channel = WebSocketChannel.connect(uri);
 
       await _channel!.ready;
-      _setState(ConnectionState.connected);
+      _setState(GatewayConnectionState.connected);
 
       _subscription = _channel!.stream.listen(
         _handleMessage,
@@ -96,13 +96,13 @@ class GatewayClient {
       // Wait for challenge
       await _waitForChallenge();
     } on WebSocketException {
-      _setState(ConnectionState.error);
+      _setState(GatewayConnectionState.error);
       rethrow;
     } on NetworkException {
-      _setState(ConnectionState.error);
+      _setState(GatewayConnectionState.error);
       rethrow;
     } catch (e) {
-      _setState(ConnectionState.error);
+      _setState(GatewayConnectionState.error);
       _logger.e('Connection failed', error: e);
       throw WebSocketException(
         type: WebSocketErrorType.connectionLost,
@@ -186,7 +186,7 @@ class GatewayClient {
     final response = await sendRequest('connect', params.toJson());
 
     if (!response.ok) {
-      _setState(ConnectionState.error);
+      _setState(GatewayConnectionState.error);
       final error = response.error;
       if (error != null) {
         // Check for auth-related errors
@@ -219,7 +219,7 @@ class GatewayClient {
       await authService.storeDeviceToken(_deviceToken!);
     }
 
-    _setState(ConnectionState.authenticated);
+    _setState(GatewayConnectionState.authenticated);
     _logger.i('Handshake complete. Protocol: $_protocol');
 
     return connectResponse;
@@ -289,7 +289,7 @@ class GatewayClient {
     _pendingRequests.clear();
 
     _challengeNonce = null;
-    _setState(ConnectionState.disconnected);
+    _setState(GatewayConnectionState.disconnected);
   }
 
   // ===========================================================================
@@ -344,12 +344,12 @@ class GatewayClient {
 
   void _handleError(dynamic error) {
     _logger.e('WebSocket error', error: error);
-    _setState(ConnectionState.error);
+    _setState(GatewayConnectionState.error);
   }
 
   void _handleDone() {
     _logger.i('WebSocket closed');
-    _setState(ConnectionState.disconnected);
+    _setState(GatewayConnectionState.disconnected);
   }
 
   void _setState(ConnectionState state) {
@@ -367,7 +367,7 @@ class GatewayClient {
 }
 
 /// Connection states
-enum ConnectionState {
+enum GatewayConnectionState {
   disconnected,
   connecting,
   connected,

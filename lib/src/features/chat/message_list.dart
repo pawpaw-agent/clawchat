@@ -45,11 +45,6 @@ class MessageListState extends ConsumerState<MessageList> {
   // Scroll detection
   bool _isUserScrolling = false;
   bool _autoScrollEnabled = true;
-  int _lastMessageCount = 0;
-
-  // Frame time tracking for FPS measurement
-  DateTime? _lastFrameTime;
-  int _frameCount = 0;
 
   @override
   void initState() {

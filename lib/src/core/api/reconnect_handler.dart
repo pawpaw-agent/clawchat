@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import 'gateway_client.dart';
 import 'gateway_protocol.dart';
+import '../errors/app_exception.dart';
 
 /// Pending message that needs to be resent after reconnection
 class PendingMessage {
@@ -199,7 +200,7 @@ class ReconnectHandler {
       _logger.i('Reconnecting (attempt ${_reconnectAttempts + 1})...');
 
       // Disconnect existing connection if any
-      if (client.state != ConnectionState.disconnected) {
+      if (client.state != GatewayConnectionState.disconnected) {
         await client.disconnect();
       }
 

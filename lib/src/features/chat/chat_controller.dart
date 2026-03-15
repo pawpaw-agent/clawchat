@@ -1,7 +1,6 @@
 /// Chat controller with Riverpod state management
 library;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/models/message.dart';
@@ -48,14 +47,11 @@ class ChatState {
 class ChatNotifier extends StateNotifier<ChatState> with ErrorHandlingMixin {
   final Uuid _uuid;
   final String sessionKey;
-  final Ref _ref;
 
   ChatNotifier({
     Uuid? uuid,
     required this.sessionKey,
-    required Ref ref,
   })  : _uuid = uuid ?? const Uuid(),
-        _ref = ref,
         super(const ChatState()) {
     _loadMockData();
   }

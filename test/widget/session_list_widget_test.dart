@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clawchat/src/features/sessions/session_list_screen.dart';
-import 'package:clawchat/src/features/sessions/session_controller.dart';
-import 'package:clawchat/src/core/models/session.dart';
 
 void main() {
   group('SessionListScreen Widget Tests', () {
@@ -75,7 +73,7 @@ void main() {
 
   group('PaginationState Tests', () {
     test('PaginationState initializes correctly', () {
-      const state = PaginationState<String>();
+      final state = PaginationState<String>();
       
       expect(state.items, isEmpty);
       expect(state.pageSize, equals(20));
@@ -85,7 +83,7 @@ void main() {
 
     test('PaginationState canLoadMore works correctly', () {
       // Can load more
-      const state1 = PaginationState<String>(hasMore: true, isLoading: false);
+      final state1 = PaginationState<String>(hasMore: true, isLoading: false);
       expect(state1.canLoadMore, isTrue);
       
       // Cannot load more when loading

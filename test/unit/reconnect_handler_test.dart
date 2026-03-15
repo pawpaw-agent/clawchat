@@ -1,11 +1,10 @@
 /// Unit tests for ReconnectHandler
 library;
 
-import 'dart:async';
-
 import 'package:clawchat/src/core/api/gateway_client.dart';
 import 'package:clawchat/src/core/api/gateway_protocol.dart';
 import 'package:clawchat/src/core/api/reconnect_handler.dart';
+import 'package:clawchat/src/core/errors/app_exception.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
 import 'package:mocktail/mocktail.dart';

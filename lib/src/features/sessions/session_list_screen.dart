@@ -302,7 +302,7 @@ class SessionListScreenState extends ConsumerState<SessionListScreen> {
     );
   }
 
-  Widget _buildError(BuildContext context, String error) {
+  Widget _buildError(BuildContext context, AppException error) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -319,7 +319,7 @@ class SessionListScreenState extends ConsumerState<SessionListScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            error,
+            error.userMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.error,
                 ),
@@ -509,12 +509,13 @@ class _PaginatedSessionList extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
+        final nonNullSession = session;
         return RepaintBoundary(
-          key: ValueKey('session_${session.key}'),
+          key: ValueKey('session_${nonNullSession.key}'),
           child: SessionTile(
-            session: session,
-            isActive: activeSessionKey == session.key,
-            onTap: () => onSessionTap(session),
+            session: nonNullSession,
+            isActive: activeSessionKey == nonNullSession.key,
+            onTap: () => onSessionTap(nonNullSession),
             onDelete: onDelete,
             onArchive: onArchive,
             onPin: onPin,

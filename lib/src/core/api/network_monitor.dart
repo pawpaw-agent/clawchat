@@ -10,7 +10,7 @@ import 'package:logger/logger.dart';
 /// Network status information
 class NetworkStatus {
   final bool isConnected;
-  final ConnectivityResult connectionType;
+  final List<ConnectivityResult> connectionTypes;
   final DateTime timestamp;
   final bool isWifi;
   final bool isMobile;
@@ -18,21 +18,21 @@ class NetworkStatus {
 
   const NetworkStatus({
     required this.isConnected,
-    required this.connectionType,
+    required this.connectionTypes,
     required this.timestamp,
     this.isWifi = false,
     this.isMobile = false,
     this.isExpensive = false,
   });
 
-  factory NetworkStatus.fromResult(ConnectivityResult result) {
-    final isConnected = result != ConnectivityResult.none;
-    final isWifi = result == ConnectivityResult.wifi;
-    final isMobile = result == ConnectivityResult.mobile;
+  factory NetworkStatus.fromResults(List<ConnectivityResult> results) {
+    final isConnected = results.isNotEmpty && !results.contains(ConnectivityResult.none);
+    final isWifi = results.contains(ConnectivityResult.wifi);
+    final isMobile = results.contains(ConnectivityResult.mobile);
 
     return NetworkStatus(
       isConnected: isConnected,
-      connectionType: result,
+      connectionTypes: results,
       timestamp: DateTime.now(),
       isWifi: isWifi,
       isMobile: isMobile,
@@ -40,14 +40,15 @@ class NetworkStatus {
     );
   }
 
-  static const NetworkStatus disconnected = NetworkStatus(
+  /// Disconnected status factory (not const due to DateTime.now())
+  static NetworkStatus disconnected() => NetworkStatus(
     isConnected: false,
-    connectionType: ConnectivityResult.none,
+    connectionTypes: [ConnectivityResult.none],
     timestamp: DateTime.fromMillisecondsSinceEpoch(0),
   );
 
   @override
-  String toString() => 'NetworkStatus(connected: $isConnected, type: $connectionType)';
+  String toString() => 'NetworkStatus(connected: $isConnected, types: $connectionTypes)';
 }
 
 /// Callback for network status changes
@@ -64,7 +65,7 @@ class NetworkMonitor {
   final Logger _logger;
 
   StreamSubscription<List<ConnectivityResult>>? _subscription;
-  NetworkStatus _currentStatus = NetworkStatus.disconnected;
+  NetworkStatus _currentStatus = NetworkStatus.disconnected();
   final List<NetworkStatusCallback> _statusCallbacks = [];
   final List<NetworkRestorationCallback> _restorationCallbacks = [];
 
@@ -92,132 +93,97 @@ class NetworkMonitor {
     }
 
     // Add current status
-    if (_currentStatus.isConnected || 
-        _currentStatus != NetworkStatus.disconnected) {
-      controller.add(_currentStatus);
-    }
+    emitStatus(_currentStatus);
 
-    // Subscribe to changes
-    final callback = emitStatus;
-    onStatusChange(callback);
-
-    // Cleanup on cancel
-    controller.onCancel = () {
-      offStatusChange(callback);
-    };
+    // Listen for changes
+    _statusCallbacks.add(emitStatus);
 
     return controller.stream;
   }
 
   /// Start monitoring network connectivity
   Future<void> start() async {
-    if (_subscription != null) {
-      _logger.w('Network monitor already started');
-      return;
-    }
-
-    // Get initial status
+    _logger.i('Starting network monitor...');
+    
     try {
+      // Get initial status
       final results = await Connectivity().checkConnectivity();
       _updateStatus(results);
-      _logger.i('Network monitor started. Initial status: $_currentStatus');
+      
+      // Listen for changes
+      _subscription = Connectivity().onConnectivityChanged.listen(
+        _updateStatus,
+        onError: (error) {
+          _logger.e('Network monitor error', error: error);
+        },
+      );
+      
+      _logger.i('Network monitor started');
     } catch (e) {
-      _logger.e('Failed to get initial connectivity status', error: e);
-      _currentStatus = NetworkStatus.disconnected;
+      _logger.e('Failed to start network monitor', error: e);
     }
-
-    // Subscribe to changes
-    _subscription = Connectivity().onConnectivityChanged.listen(
-      _handleConnectivityChange,
-      onError: (error) {
-        _logger.e('Connectivity stream error', error: error);
-      },
-    );
   }
 
   /// Stop monitoring
-  Future<void> stop() async {
-    await _subscription?.cancel();
+  void stop() {
+    _subscription?.cancel();
     _subscription = null;
     _logger.i('Network monitor stopped');
   }
 
-  /// Subscribe to network status changes
-  void onStatusChange(NetworkStatusCallback callback) {
+  /// Register a callback for network status changes
+  void onStatusChanged(NetworkStatusCallback callback) {
     _statusCallbacks.add(callback);
   }
 
-  /// Unsubscribe from network status changes
-  void offStatusChange(NetworkStatusCallback callback) {
-    _statusCallbacks.remove(callback);
-  }
-
-  /// Subscribe to network restoration events
+  /// Register a callback for network restoration (reconnect trigger)
   void onRestoration(NetworkRestorationCallback callback) {
     _restorationCallbacks.add(callback);
   }
 
-  /// Unsubscribe from network restoration events
-  void offRestoration(NetworkRestorationCallback callback) {
+  /// Remove a registered callback
+  void removeCallback(NetworkStatusCallback callback) {
+    _statusCallbacks.remove(callback);
+  }
+
+  /// Remove a registered restoration callback
+  void removeRestorationCallback(NetworkRestorationCallback callback) {
     _restorationCallbacks.remove(callback);
   }
 
-  /// Check current connectivity status
-  Future<NetworkStatus> checkStatus() async {
-    try {
-      final results = await Connectivity().checkConnectivity();
-      _updateStatus(results);
-      return _currentStatus;
-    } catch (e) {
-      _logger.e('Failed to check connectivity', error: e);
-      return NetworkStatus.disconnected;
-    }
-  }
-
-  // ===========================================================================
-  // Private Methods
-  // ===========================================================================
-
-  void _handleConnectivityChange(List<ConnectivityResult> results) {
-    final previousStatus = _currentStatus;
-    _updateStatus(results);
-
-    _logger.i(
-      'Network changed: $previousStatus -> $_currentStatus',
-    );
-
-    // Notify callbacks
-    for (final callback in _statusCallbacks) {
-      callback(_currentStatus);
-    }
-
-    // Check for network restoration (was disconnected, now connected)
-    if (!previousStatus.isConnected && _currentStatus.isConnected) {
-      _logger.i('Network restored: ${_currentStatus.connectionType}');
-      for (final callback in _restorationCallbacks) {
-        callback(previousStatus, _currentStatus);
-      }
-    }
-
-    // Check for network type change (WiFi <-> Mobile)
-    if (previousStatus.isConnected && _currentStatus.isConnected) {
-      if (previousStatus.isWifi != _currentStatus.isWifi) {
-        _logger.i(
-          'Network type changed: ${previousStatus.connectionType} -> ${_currentStatus.connectionType}',
-        );
-      }
-    }
-  }
-
   void _updateStatus(List<ConnectivityResult> results) {
-    // Take the first result if multiple (e.g., WiFi + VPN)
-    final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
-    _currentStatus = NetworkStatus.fromResult(result);
+    final previousStatus = _currentStatus;
+    final newStatus = NetworkStatus.fromResults(results);
+    
+    _currentStatus = newStatus;
+    
+    _logger.d('Network status changed: $previousStatus -> $newStatus');
+    
+    // Notify status callbacks
+    for (final callback in _statusCallbacks) {
+      try {
+        callback(newStatus);
+      } catch (e) {
+        _logger.e('Error in status callback', error: e);
+      }
+    }
+    
+    // Check for restoration (was disconnected, now connected)
+    if (!previousStatus.isConnected && newStatus.isConnected) {
+      _logger.i('Network restored: ${newStatus.connectionTypes}');
+      for (final callback in _restorationCallbacks) {
+        try {
+          callback(previousStatus, newStatus);
+        } catch (e) {
+          _logger.e('Error in restoration callback', error: e);
+        }
+      }
+    }
   }
 
-  /// Dispose resources
-  Future<void> dispose() async {
-    await stop();
+  /// Dispose of resources
+  void dispose() {
+    stop();
     _statusCallbacks.clear();
     _restorationCallbacks.clear();
   }

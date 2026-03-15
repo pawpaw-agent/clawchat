@@ -78,11 +78,7 @@ class SessionState {
 
 /// Session notifier with error handling
 class SessionNotifier extends StateNotifier<SessionState> with ErrorHandlingMixin {
-  final Ref _ref;
-
-  SessionNotifier({required Ref ref})
-      : _ref = ref,
-        super(const SessionState()) {
+  SessionNotifier() : super(const SessionState()) {
     _loadMockData();
   }
 

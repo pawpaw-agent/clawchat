@@ -213,6 +213,26 @@ enum WebSocketErrorType {
   unknown,
 }
 
+/// Gateway-related exceptions
+class GatewayException extends AppException {
+  final String reason;
+  final String? code;
+
+  GatewayException(this.reason, {this.code});
+
+  @override
+  String get userMessage => '网关错误: $reason';
+
+  @override
+  String get technicalMessage => 'GatewayException: $reason${code != null ? ' (code: $code)' : ''}';
+
+  @override
+  bool get isRecoverable => true;
+
+  @override
+  String? get suggestedAction => '重试';
+}
+
 /// Storage-related exceptions
 class StorageException extends AppException {
   final StorageErrorType type;
