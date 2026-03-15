@@ -59,18 +59,21 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
         await ref.read(settingsProvider.notifier).setGatewayUrl(widget.gatewayUrl);
         await ref.read(settingsProvider.notifier).setDeviceToken('mock-device-token-${DateTime.now().millisecondsSinceEpoch}');
         
+        // Refresh bootstrap state so app knows we're ready
+        ref.read(appBootstrapProvider.notifier).refresh();
+        
         setState(() {
           _isPairing = false;
           _isPaired = true;
         });
 
-        // Navigate to chat after a short delay
+        // Navigate to main shell after a short delay
         await Future.delayed(const Duration(seconds: 1));
         
         if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (context) => const ChatScreen(),
+              builder: (context) => const MainShell(),
             ),
           );
         }
