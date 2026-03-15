@@ -145,22 +145,10 @@ class _StreamingTextState extends State<StreamingText> {
     final hasCursor = widget.isStreaming && widget.cursorChar.isNotEmpty;
 
     if (hasCursor) {
-      return RichText(
-        text: TextSpan(
-          children: [
-            TextSpan(
-              text: textToShow,
-              style: widget.style,
-            ),
-            TextSpan(
-              text: widget.cursorChar,
-              style: (widget.style ?? const TextStyle()).copyWith(
-                color: (widget.style?.color ?? Theme.of(context).colorScheme.onSurface)
-                    .withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
+      // Use Text with concatenated string for testability
+      return Text(
+        '$textToShow${widget.cursorChar}',
+        style: widget.style,
       );
     }
 
