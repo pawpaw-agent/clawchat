@@ -317,12 +317,23 @@ void main() {
       // Pin the second one
       await notifier.togglePin(session2.key);
 
+      // Verify session2 is pinned
+      final session2State = notifier.state.sessions.firstWhere((s) => s.key == session2.key);
+      expect(session2State.isPinned, isTrue);
+
+      // Verify session1 is not pinned
+      final session1State = notifier.state.sessions.firstWhere((s) => s.key == session1.key);
+      expect(session1State.isPinned, isFalse);
+
+      // In sorted list, all pinned sessions should come before unpinned
       final sorted = notifier.state.sortedSessions;
-      // Session2 should be pinned and appear before session1
-      final session2Index = sorted.indexWhere((s) => s.key == session2.key);
-      final session1Index = sorted.indexWhere((s) => s.key == session1.key);
-      expect(session2Index, lessThan(session1Index));
-      expect(sorted[session2Index].isPinned, isTrue);
+      final lastPinnedIndex = sorted.lastIndexWhere((s) => s.isPinned);
+      final firstUnpinnedIndex = sorted.indexWhere((s) => !s.isPinned);
+
+      // If there are both pinned and unpinned sessions, pinned should come first
+      if (lastPinnedIndex >= 0 && firstUnpinnedIndex >= 0) {
+        expect(lastPinnedIndex, lessThan(firstUnpinnedIndex));
+      }
     });
 
     test('activeSessions filters out archived', () async {

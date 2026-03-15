@@ -160,8 +160,8 @@ void main() {
         ),
       );
 
-      // Full text should be visible immediately
-      expect(find.text(fullText), findsOneWidget);
+      // Full text should be visible immediately (with cursor since isStreaming: true)
+      expect(find.textContaining(fullText), findsOneWidget);
     });
 
     testWidgets('handles empty text', (tester) async {
