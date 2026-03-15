@@ -10,7 +10,7 @@ import 'package:logger/logger.dart';
 /// Network status information
 class NetworkStatus {
   final bool isConnected;
-  final List<ConnectivityResult> connectionTypes;
+  final ConnectivityResult connectionType;
   final DateTime timestamp;
   final bool isWifi;
   final bool isMobile;
@@ -18,21 +18,21 @@ class NetworkStatus {
 
   const NetworkStatus({
     required this.isConnected,
-    required this.connectionTypes,
+    required this.connectionType,
     required this.timestamp,
     this.isWifi = false,
     this.isMobile = false,
     this.isExpensive = false,
   });
 
-  factory NetworkStatus.fromResults(List<ConnectivityResult> results) {
-    final isConnected = results.isNotEmpty && !results.contains(ConnectivityResult.none);
-    final isWifi = results.contains(ConnectivityResult.wifi);
-    final isMobile = results.contains(ConnectivityResult.mobile);
+  factory NetworkStatus.fromResult(ConnectivityResult result) {
+    final isConnected = result != ConnectivityResult.none;
+    final isWifi = result == ConnectivityResult.wifi;
+    final isMobile = result == ConnectivityResult.mobile;
 
     return NetworkStatus(
       isConnected: isConnected,
-      connectionTypes: results,
+      connectionType: result,
       timestamp: DateTime.now(),
       isWifi: isWifi,
       isMobile: isMobile,
@@ -43,12 +43,12 @@ class NetworkStatus {
   /// Disconnected status factory (not const due to DateTime.now())
   static NetworkStatus disconnected() => NetworkStatus(
     isConnected: false,
-    connectionTypes: [ConnectivityResult.none],
+    connectionType: ConnectivityResult.none,
     timestamp: DateTime.fromMillisecondsSinceEpoch(0),
   );
 
   @override
-  String toString() => 'NetworkStatus(connected: $isConnected, types: $connectionTypes)';
+  String toString() => 'NetworkStatus(connected: $isConnected, type: $connectionType)';
 }
 
 /// Callback for network status changes
@@ -64,7 +64,7 @@ typedef NetworkRestorationCallback = void Function(
 class NetworkMonitor {
   final Logger _logger;
 
-  StreamSubscription<List<ConnectivityResult>>? _subscription;
+  StreamSubscription<ConnectivityResult>? _subscription;
   NetworkStatus _currentStatus = NetworkStatus.disconnected();
   final List<NetworkStatusCallback> _statusCallbacks = [];
   final List<NetworkRestorationCallback> _restorationCallbacks = [];
@@ -107,8 +107,8 @@ class NetworkMonitor {
     
     try {
       // Get initial status
-      final results = await Connectivity().checkConnectivity();
-      _updateStatus(results);
+      final result = await Connectivity().checkConnectivity();
+      _updateStatus(result);
       
       // Listen for changes
       _subscription = Connectivity().onConnectivityChanged.listen(
@@ -151,9 +151,9 @@ class NetworkMonitor {
     _restorationCallbacks.remove(callback);
   }
 
-  void _updateStatus(List<ConnectivityResult> results) {
+  void _updateStatus(ConnectivityResult result) {
     final previousStatus = _currentStatus;
-    final newStatus = NetworkStatus.fromResults(results);
+    final newStatus = NetworkStatus.fromResult(result);
     
     _currentStatus = newStatus;
     
@@ -170,7 +170,7 @@ class NetworkMonitor {
     
     // Check for restoration (was disconnected, now connected)
     if (!previousStatus.isConnected && newStatus.isConnected) {
-      _logger.i('Network restored: ${newStatus.connectionTypes}');
+      _logger.i('Network restored: ${newStatus.connectionType}');
       for (final callback in _restorationCallbacks) {
         try {
           callback(previousStatus, newStatus);

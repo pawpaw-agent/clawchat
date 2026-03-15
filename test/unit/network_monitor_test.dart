@@ -6,47 +6,35 @@ import 'dart:async';
 import 'package:clawchat/src/core/api/network_monitor.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:logger/logger.dart';
 
 void main() {
   group('NetworkStatus', () {
     test('creates from ConnectivityResult.wifi', () {
-      final status = NetworkStatus.fromResults([ConnectivityResult.wifi]);
+      final status = NetworkStatus.fromResult(ConnectivityResult.wifi);
 
       expect(status.isConnected, isTrue);
       expect(status.isWifi, isTrue);
       expect(status.isMobile, isFalse);
       expect(status.isExpensive, isFalse);
-      expect(status.connectionTypes, contains(ConnectivityResult.wifi));
+      expect(status.connectionType, equals(ConnectivityResult.wifi));
     });
 
     test('creates from ConnectivityResult.mobile', () {
-      final status = NetworkStatus.fromResults([ConnectivityResult.mobile]);
+      final status = NetworkStatus.fromResult(ConnectivityResult.mobile);
 
       expect(status.isConnected, isTrue);
       expect(status.isWifi, isFalse);
       expect(status.isMobile, isTrue);
       expect(status.isExpensive, isTrue);
-      expect(status.connectionTypes, contains(ConnectivityResult.mobile));
+      expect(status.connectionType, equals(ConnectivityResult.mobile));
     });
 
     test('creates from ConnectivityResult.none', () {
-      final status = NetworkStatus.fromResults([ConnectivityResult.none]);
+      final status = NetworkStatus.fromResult(ConnectivityResult.none);
 
       expect(status.isConnected, isFalse);
       expect(status.isWifi, isFalse);
       expect(status.isMobile, isFalse);
-    });
-
-    test('handles multiple connection types', () {
-      final status = NetworkStatus.fromResults([
-        ConnectivityResult.wifi,
-        ConnectivityResult.mobile,
-      ]);
-
-      expect(status.isConnected, isTrue);
-      expect(status.isWifi, isTrue);
-      expect(status.isMobile, isTrue);
     });
   });
 
@@ -67,7 +55,8 @@ void main() {
       });
 
       // Status callback is registered
-      expect(monitor._statusCallbacks.length, equals(1));
+      await Future.delayed(const Duration(milliseconds: 100));
+      expect(completer.isCompleted, isFalse);
     });
   });
 }

@@ -311,7 +311,7 @@ class ConnectionManager {
   }
 
   void _handleNetworkRestoration(NetworkStatus previous, NetworkStatus current) {
-    _logger.i('Network restored: ${previous.connectionTypes} -> ${current.connectionTypes}');
+    _logger.i('Network restored: ${previous.connectionType} -> ${current.connectionType}');
 
     // If we're disconnected but should be connected, trigger reconnect
     if (_state.connectionState == GatewayConnectionState.disconnected ||
@@ -398,4 +398,4 @@ extension ManagedGatewayConnectionStateCopyWith on ManagedGatewayConnectionState
       lastError: lastError ?? this.lastError,
     );
   }
-}
+}}
