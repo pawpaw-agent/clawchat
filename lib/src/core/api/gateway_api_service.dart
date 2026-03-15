@@ -152,7 +152,7 @@ class GatewayApiService {
     required String requestId,
   }) async {
     try {
-      final response = await _client.request(
+      final response = await _client.sendRequest(
         method: 'node.pair.approve',
         params: {'requestId': requestId},
       );

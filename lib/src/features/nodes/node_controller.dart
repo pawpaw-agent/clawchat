@@ -127,12 +127,13 @@ class NodeNotifier extends StateNotifier<NodeState> with ErrorHandlingMixin {
     state = state.copyWith(isLoading: true);
 
     try {
-      if (_apiService != null && _apiService!.isConnected) {
+      final apiService = _apiService;
+      if (apiService != null && apiService.isConnected) {
         // Use real API
-        final response = await _apiService!.listNodes();
+        final response = await apiService.listNodes();
         if (response.success && response.data != null) {
           state = state.copyWith(
-            nodes: response.data!,
+            nodes: response.data,
             isLoading: false,
           );
           return;

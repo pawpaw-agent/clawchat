@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'gateway_config_screen.dart';
 
 /// Onboarding screen shown to first-time users
@@ -39,7 +38,6 @@ class OnboardingScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final theme = Theme.of(context);
     
     return Column(
       children: [
@@ -81,7 +79,6 @@ class OnboardingScreen extends StatelessWidget {
   }
 
   Widget _buildFeatures(BuildContext context) {
-    final theme = Theme.of(context);
     
     return Column(
       children: [
@@ -115,7 +112,6 @@ class OnboardingScreen extends StatelessWidget {
     required String title,
     required String description,
   }) {
-    final theme = Theme.of(context);
     
     return Row(
       children: [

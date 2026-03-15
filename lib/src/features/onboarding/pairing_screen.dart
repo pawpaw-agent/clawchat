@@ -349,4 +349,4 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
 }
 
 // Simple logger for fallback
-final _logger = Logger(printer: PrettyPrinter());
+final _logger = Logger();
