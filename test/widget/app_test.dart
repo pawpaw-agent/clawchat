@@ -6,7 +6,6 @@ import 'package:clawchat/src/features/settings/settings_controller.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
-    // Override the settings provider to avoid SecureStorage issues in tests
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -19,7 +18,7 @@ void main() {
     // Wait for the app to settle
     await tester.pumpAndSettle();
     
-    // Verify the app renders without errors
+    // Verify the app renders MaterialApp
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
@@ -28,7 +27,6 @@ void main() {
 class MockSettingsNotifier extends SettingsNotifier {
   @override
   SettingsState build() {
-    // Return default settings without loading from storage
     return const SettingsState();
   }
 }
