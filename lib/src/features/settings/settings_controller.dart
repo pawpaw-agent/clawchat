@@ -171,6 +171,26 @@ class SettingsNotifier extends Notifier<SettingsState> {
     }
   }
 
+  /// Set device token
+  Future<void> setDeviceToken(String token) async {
+    try {
+      await _appSettings.setDeviceToken(token);
+      state = state.copyWith(deviceToken: token);
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to save device token: $e');
+    }
+  }
+
+  /// Set device public key
+  Future<void> setDevicePublicKey(String publicKey) async {
+    try {
+      await _appSettings.setDevicePublicKey(publicKey);
+      state = state.copyWith(devicePublicKey: publicKey);
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to save device public key: $e');
+    }
+  }
+
   /// Clear authentication info
   Future<void> clearAuthInfo() async {
     try {
