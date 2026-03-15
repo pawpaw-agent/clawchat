@@ -156,8 +156,6 @@ class OnboardingScreen extends StatelessWidget {
   }
 
   Widget _buildGetStartedButton(BuildContext context) {
-    final theme = Theme.of(context);
-    
     return FilledButton.icon(
       onPressed: () {
         Navigator.of(context).pushReplacement(

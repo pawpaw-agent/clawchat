@@ -3,8 +3,8 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../settings/settings_controller.dart';
-import '../../chat/chat_screen.dart';
+import '../settings/settings_controller.dart';
+import '../chat/chat_screen.dart';
 
 /// Pairing screen for device authentication
 class PairingScreen extends ConsumerStatefulWidget {
