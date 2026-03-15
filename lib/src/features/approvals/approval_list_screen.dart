@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/approval_request.dart';
 import 'approval_controller.dart';
-import 'approval_dialog.dart';
 
 /// Approval list screen
 class ApprovalListScreen extends ConsumerWidget {

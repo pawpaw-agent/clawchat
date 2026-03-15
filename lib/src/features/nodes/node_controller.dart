@@ -113,10 +113,8 @@ class InvokeState {
 
 /// Node notifier with error handling
 class NodeNotifier extends StateNotifier<NodeState> with ErrorHandlingMixin {
-  final Uuid _uuid;
 
   NodeNotifier({Uuid? uuid})
-      : _uuid = uuid ?? const Uuid(),
         super(const NodeState()) {
     _loadMockData();
   }
@@ -368,13 +366,11 @@ class NodeNotifier extends StateNotifier<NodeState> with ErrorHandlingMixin {
 
 /// Node invoke notifier for command execution
 class NodeInvokeNotifier extends StateNotifier<InvokeState> with ErrorHandlingMixin {
-  final Uuid _uuid;
   final String nodeId;
 
   NodeInvokeNotifier({
     Uuid? uuid,
     required this.nodeId,
-  })  : _uuid = uuid ?? const Uuid(),
         super(const InvokeState());
 
   /// Invoke a command on the node
@@ -396,7 +392,6 @@ class NodeInvokeNotifier extends StateNotifier<InvokeState> with ErrorHandlingMi
 
       // Mock result
       final result = NodeInvokeResult(
-        id: _uuid.v4(),
         nodeId: nodeId,
         command: command,
         success: true,
@@ -423,7 +418,6 @@ class NodeInvokeNotifier extends StateNotifier<InvokeState> with ErrorHandlingMi
       );
 
       final failedResult = NodeInvokeResult(
-        id: _uuid.v4(),
         nodeId: nodeId,
         command: command,
         success: false,

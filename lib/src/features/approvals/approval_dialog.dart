@@ -57,6 +57,7 @@ class ApprovalDialog extends ConsumerWidget {
 
   void _handleDeny(BuildContext context, WidgetRef ref) async {
     final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     
     final success = await ref.read(approvalProvider.notifier).resolveApproval(
       id: request.id,
@@ -66,12 +67,15 @@ class ApprovalDialog extends ConsumerWidget {
     if (success) {
       navigator.pop();
       onDeny?.call();
-      _showSnackBar(context, '已拒绝执行请求', Colors.red);
+      messenger.showSnackBar(
+        SnackBar(content: const Text('已拒绝执行请求'), backgroundColor: Colors.red),
+      );
     }
   }
 
   void _handleAllowOnce(BuildContext context, WidgetRef ref) async {
     final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     
     final success = await ref.read(approvalProvider.notifier).resolveApproval(
       id: request.id,
@@ -81,12 +85,15 @@ class ApprovalDialog extends ConsumerWidget {
     if (success) {
       navigator.pop();
       onApprove?.call();
-      _showSnackBar(context, '已允许执行（仅本次）', Colors.green);
+      messenger.showSnackBar(
+        SnackBar(content: const Text('已允许执行（仅本次）'), backgroundColor: Colors.green),
+      );
     }
   }
 
   void _handleAllowAlways(BuildContext context, WidgetRef ref) async {
     final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     
     final success = await ref.read(approvalProvider.notifier).resolveApproval(
       id: request.id,
@@ -96,18 +103,10 @@ class ApprovalDialog extends ConsumerWidget {
     if (success) {
       navigator.pop();
       onApprove?.call();
-      _showSnackBar(context, '已允许执行（始终）', Colors.green);
+      messenger.showSnackBar(
+        SnackBar(content: const Text('已允许执行（始终）'), backgroundColor: Colors.green),
+      );
     }
-  }
-
-  void _showSnackBar(BuildContext context, String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 }
 
@@ -339,14 +338,15 @@ class ApprovalDialogRoute<T> extends PopupRoute<T> {
 extension ApprovalDialogExtension on BuildContext {
   /// Show approval dialog
   Future<bool> showApproval({
+    required BuildContext context,
     required ApprovalRequest request,
     VoidCallback? onApprove,
     VoidCallback? onDeny,
   }) async {
     final result = await showDialog<bool>(
-      this,
+      context: context,
       barrierDismissible: false,
-      builder: (context) => ApprovalDialog(
+      builder: (ctx) => ApprovalDialog(
         request: request,
         onApprove: onApprove,
         onDeny: onDeny,
