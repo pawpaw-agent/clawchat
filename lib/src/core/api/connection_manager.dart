@@ -98,7 +98,6 @@ class ConnectionManager {
   StreamSubscription? _networkSubscription;
 
   // Handshake parameters
-  String _storedLocale = 'zh-CN';
 
   ConnectionManager({
     required this.client,

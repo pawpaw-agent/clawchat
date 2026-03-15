@@ -5,7 +5,6 @@ library;
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 /// Diff result for list updates
 class DiffResult<T> {
