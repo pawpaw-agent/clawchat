@@ -4,7 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'settings_controller.dart';
-import '../core/storage/app_settings.dart';
+import '../../core/storage/app_settings.dart';
 
 /// Settings screen
 class SettingsScreen extends ConsumerStatefulWidget {
