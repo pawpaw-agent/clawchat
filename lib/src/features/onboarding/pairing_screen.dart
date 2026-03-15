@@ -4,7 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings/settings_controller.dart';
-import '../chat/chat_screen.dart';
+import '../../shared/widgets/main_shell.dart';
 import 'app_bootstrap.dart';
 
 /// Pairing screen for device authentication
