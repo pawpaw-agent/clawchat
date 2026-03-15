@@ -191,7 +191,7 @@ class GatewayClient {
       final error = response.error;
       if (error != null) {
         // Check for auth-related errors
-        final code = error.code?.toString() ?? '';
+        final code = error.code.toString();
         if (code.contains('auth') || code.contains('token') || code.contains('unauthorized')) {
           throw AuthException(
             type: AuthErrorType.invalidToken,
@@ -200,7 +200,7 @@ class GatewayClient {
         }
         throw ServerException(
           type: ServerErrorType.unknown,
-          code: error.code?.toString(),
+          code: error.code.toString(),
           details: error.message,
         );
       }
@@ -216,9 +216,9 @@ class GatewayClient {
     _policy = connectResponse.policy;
     
     // Safely handle auth response (may be null)
-    final auth = connectResponse.auth;
-    if (auth != null && auth.deviceToken != null) {
-      _deviceToken = auth.deviceToken;
+    final authResponse = connectResponse.auth;
+    if (authResponse != null && authResponse.deviceToken != null) {
+      _deviceToken = authResponse.deviceToken;
       await authService.storeDeviceToken(_deviceToken!);
     }
 

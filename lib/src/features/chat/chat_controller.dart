@@ -140,7 +140,7 @@ Feel free to ask any questions!''',
     // Check if there are any user messages
     final userMessages = state.messages.where((m) => m.role == MessageRole.user.value);
     if (userMessages.isEmpty) {
-      _logger.w('No user message to retry');
+      // No user message to retry
       return;
     }
 

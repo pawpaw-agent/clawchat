@@ -405,7 +405,7 @@ class MessageTooLongException extends AppException {
   });
 
   @override
-  String get userMessage => '消息过长（${length}字符，最大${maxLength}字符）';
+  String get userMessage => '消息过长（$length字符，最大$maxLength字符）';
 
   @override
   String get technicalMessage =>
