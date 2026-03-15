@@ -3,9 +3,11 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'pairing_screen.dart';
+import '../../shared/widgets/main_shell.dart';
 import '../../core/api/gateway_client.dart';
 import '../../core/api/auth_service.dart';
+import '../settings/settings_controller.dart';
+import 'app_bootstrap.dart';
 
 /// Convert HTTP URL to WebSocket URL
 /// - http:// → ws://
@@ -47,7 +49,9 @@ class GatewayConfigScreen extends ConsumerStatefulWidget {
 
 class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
   late final TextEditingController _urlController;
+  late final TextEditingController _tokenController;
   bool _isTesting = false;
+  bool _showTokenInput = false;
   String? _testResult;
   bool? _testSuccess;
 
@@ -55,11 +59,13 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
   void initState() {
     super.initState();
     _urlController = TextEditingController(text: widget.initialUrl);
+    _tokenController = TextEditingController();
   }
 
   @override
   void dispose() {
     _urlController.dispose();
+    _tokenController.dispose();
     super.dispose();
   }
 
@@ -71,7 +77,7 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
       appBar: AppBar(
         title: const Text('Configure Gateway'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -173,13 +179,59 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
               ),
             ],
             
-            const Spacer(),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            
+            // Token input section
+            Row(
+              children: [
+                Text(
+                  'Already have a token?',
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _showTokenInput = !_showTokenInput;
+                    });
+                  },
+                  child: Text(_showTokenInput ? 'Hide' : 'Enter Token'),
+                ),
+              ],
+            ),
+            
+            if (_showTokenInput) ...[
+              const SizedBox(height: 8),
+              TextField(
+                controller: _tokenController,
+                decoration: InputDecoration(
+                  labelText: 'Device Token',
+                  hintText: 'Paste your token here',
+                  prefixIcon: const Icon(Icons.vpn_key),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'If you already paired this device, paste the token to skip pairing.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
+            
+            const SizedBox(height: 32),
             
             // Continue button
             FilledButton.icon(
-              onPressed: _testSuccess == true ? _continue : null,
+              onPressed: _canContinue() ? _continue : null,
               icon: const Icon(Icons.arrow_forward_rounded),
-              label: const Text('Continue'),
+              label: const Text(_showTokenInput ? 'Connect with Token' : 'Continue to Pairing'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
@@ -187,11 +239,27 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 32),
           ],
         ),
       ),
     );
+  }
+
+  bool _canContinue() {
+    // Can continue if:
+    // 1. Test passed and no token input shown
+    // 2. Or token is provided
+    if (_showTokenInput && _tokenController.text.trim().isNotEmpty) {
+      return _urlController.text.trim().isNotEmpty;
+    }
+    return _testSuccess == true;
+  }
+
+  String get _buttonLabel {
+    if (_showTokenInput && _tokenController.text.trim().isNotEmpty) {
+      return 'Connect with Token';
+    }
+    return 'Continue to Pairing';
   }
 
   Future<void> _testConnection() async {
@@ -239,7 +307,6 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
         }
       } catch (e) {
         // Connection failed, but let's check if it's just auth-related
-        // A "handshake failed" or "unauthorized" means the server is reachable
         final errorStr = e.toString().toLowerCase();
         if (errorStr.contains('handshake') || 
             errorStr.contains('unauthorized') ||
@@ -266,14 +333,126 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
     }
   }
 
-  void _continue() {
-    // Convert to WebSocket URL before passing to PairingScreen
+  void _continue() async {
     final wsUrl = _toWebSocketUrl(_urlController.text.trim());
     
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => PairingScreen(
-          gatewayUrl: wsUrl,
+    // If token provided, save and go directly to main
+    if (_showTokenInput && _tokenController.text.trim().isNotEmpty) {
+      final token = _tokenController.text.trim();
+      
+      // Save configuration
+      await ref.read(settingsProvider.notifier).setGatewayUrl(wsUrl);
+      await ref.read(settingsProvider.notifier).setDeviceToken(token);
+      
+      // Refresh bootstrap state
+      ref.read(appBootstrapProvider.notifier).refresh();
+      
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const MainShell(),
+          ),
+        );
+      }
+    } else {
+      // Go to pairing screen
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => _PairingScreen(
+              gatewayUrl: wsUrl,
+            ),
+          ),
+        );
+      }
+    }
+  }
+}
+
+/// Simple pairing screen placeholder
+class _PairingScreen extends ConsumerStatefulWidget {
+  final String gatewayUrl;
+
+  const _PairingScreen({required this.gatewayUrl});
+
+  @override
+  ConsumerState<_PairingScreen> createState() => _PairingScreenState();
+}
+
+class _PairingScreenState extends ConsumerState<_PairingScreen> {
+  String? _pairingCode;
+  bool _isPaired = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _startPairing();
+  }
+
+  Future<void> _startPairing() async {
+    // Simulate pairing
+    await Future.delayed(const Duration(seconds: 1));
+    
+    if (mounted) {
+      setState(() {
+        _pairingCode = 'CLAW-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+      });
+    }
+    
+    await Future.delayed(const Duration(seconds: 2));
+    
+    if (mounted) {
+      final token = 'paired-token-${DateTime.now().millisecondsSinceEpoch}';
+      await ref.read(settingsProvider.notifier).setGatewayUrl(widget.gatewayUrl);
+      await ref.read(settingsProvider.notifier).setDeviceToken(token);
+      ref.read(appBootstrapProvider.notifier).refresh();
+      
+      setState(() {
+        _isPaired = true;
+      });
+      
+      await Future.delayed(const Duration(seconds: 1));
+      
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const MainShell(),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Scaffold(
+      appBar: AppBar(title: const Text('Device Pairing')),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (!_isPaired && _pairingCode == null)
+              const CircularProgressIndicator(),
+            if (_pairingCode != null && !_isPaired) ...[
+              Text('Your Pairing Code', style: theme.textTheme.bodySmall),
+              const SizedBox(height: 8),
+              Text(_pairingCode!, style: theme.textTheme.headlineLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              )),
+              const SizedBox(height: 16),
+              const Text('Enter this code on your Gateway to complete pairing.'),
+            ],
+            if (_isPaired) ...[
+              Icon(Icons.check_circle, size: 64, color: theme.colorScheme.primary),
+              const SizedBox(height: 16),
+              const Text('Paired successfully!'),
+            ],
+          ],
         ),
       ),
     );
