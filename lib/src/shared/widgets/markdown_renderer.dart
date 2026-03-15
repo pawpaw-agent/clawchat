@@ -62,7 +62,9 @@ class MarkdownRenderer extends StatelessWidget {
       selectable: selectable,
       styleSheet: styleSheet ?? defaultStyleSheet,
       onTapLink: (text, href, title) {
-        onTapLink?.call(text, href, title);
+        if (href != null) {
+          onTapLink?.call(text, href, title);
+        }
       },
       imageDirectory: imageDirectory,
       builders: builders ?? (enableHighlight ? _createBuilders(theme) : {}),
