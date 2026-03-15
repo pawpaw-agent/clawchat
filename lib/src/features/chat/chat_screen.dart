@@ -75,25 +75,22 @@ class _ConnectionStatus extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // TODO: Get connection state from provider
-    final isConnected = false; // ignore: prefer_const_declarations
-
+    // Currently hardcoded to show "Disconnected" state
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: isConnected
-          ? Colors.green.withOpacity(0.1)
-          : Colors.orange.withOpacity(0.1),
-      child: Row(
+      color: Colors.orange.withOpacity(0.1),
+      child: const Row(
         children: [
           Icon(
-            isConnected ? Icons.check_circle : Icons.pending,
+            Icons.pending,
             size: 16,
-            color: isConnected ? Colors.green : Colors.orange,
+            color: Colors.orange,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Text(
-            isConnected ? 'Connected' : 'Disconnected',
+            'Disconnected',
             style: TextStyle(
-              color: isConnected ? Colors.green : Colors.orange,
+              color: Colors.orange,
               fontSize: 12,
             ),
           ),
