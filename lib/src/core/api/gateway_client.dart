@@ -82,12 +82,13 @@ class GatewayClient {
 
     try {
       final uri = Uri.parse(gatewayUrl);
-      _channel = WebSocketChannel.connect(uri);
+      final channel = WebSocketChannel.connect(uri);
+      _channel = channel;
 
-      await _channel!.ready;
+      await channel.ready;
       _setState(GatewayConnectionState.connected);
 
-      _subscription = _channel!.stream.listen(
+      _subscription = channel.stream.listen(
         _handleMessage,
         onError: _handleError,
         onDone: _handleDone,
@@ -214,8 +215,10 @@ class GatewayClient {
     _protocol = connectResponse.protocol;
     _policy = connectResponse.policy;
     
-    if (connectResponse.auth?.deviceToken != null) {
-      _deviceToken = connectResponse.auth!.deviceToken;
+    // Safely handle auth response (may be null)
+    final auth = connectResponse.auth;
+    if (auth != null && auth.deviceToken != null) {
+      _deviceToken = auth.deviceToken;
       await authService.storeDeviceToken(_deviceToken!);
     }
 

@@ -393,3 +393,27 @@ class ExceptionClassifier {
     );
   }
 }
+
+/// Message-related exceptions
+class MessageTooLongException extends AppException {
+  final int length;
+  final int maxLength;
+
+  MessageTooLongException({
+    required this.length,
+    required this.maxLength,
+  });
+
+  @override
+  String get userMessage => '消息过长（${length}字符，最大${maxLength}字符）';
+
+  @override
+  String get technicalMessage =>
+      'MessageTooLongException: $length > $maxLength';
+
+  @override
+  bool get isRecoverable => true;
+
+  @override
+  String? get suggestedAction => '缩短消息后重试';
+}

@@ -40,10 +40,33 @@ class _NodeDetailScreenState extends ConsumerState<NodeDetailScreen> {
     ref.read(nodeProvider.notifier).selectNode(widget.nodeId);
 
     final nodeState = ref.watch(nodeProvider);
-    final node = nodeState.nodes.firstWhere(
-      (n) => n.id == widget.nodeId,
-      orElse: () => throw StateError('Node not found'),
+    final node = nodeState.nodes.cast<Node?>().firstWhere(
+      (n) => n?.id == widget.nodeId,
+      orElse: () => null,
     );
+    
+    // Handle node not found
+    if (node == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Node Not Found')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: colorScheme.error),
+              const SizedBox(height: 16),
+              Text('Node ${widget.nodeId} not found'),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     final detail = nodeState.nodeDetails[widget.nodeId];
     final invokeState = ref.watch(nodeInvokeProvider(widget.nodeId));
 

@@ -189,8 +189,9 @@ class ReconnectHandler {
       return false;
     }
 
-    if (_storedVersion == null) {
-      _logger.e('Cannot reconnect: handshake parameters not set');
+    // Check all required parameters
+    if (_storedVersion == null || _storedLocale.isEmpty) {
+      _logger.e('Cannot reconnect: handshake parameters not set (version=${_storedVersion}, locale=$_storedLocale)');
       return false;
     }
 

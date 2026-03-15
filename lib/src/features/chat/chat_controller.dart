@@ -98,13 +98,26 @@ Feel free to ask any questions!''',
   /// Send a user message
   Future<void> sendMessage(String content) async {
     if (content.trim().isEmpty) return;
+    
+    // P2: Message length limit (10000 characters)
+    const maxLength = 10000;
+    final trimmedContent = content.trim();
+    if (trimmedContent.length > maxLength) {
+      state = state.copyWith(
+        error: MessageTooLongException(
+          length: trimmedContent.length,
+          maxLength: maxLength,
+        ),
+      );
+      return;
+    }
 
     // Create user message
     final userMessage = Message(
       id: _uuid.v4(),
       sessionKey: sessionKey,
       role: MessageRole.user.value,
-      content: content.trim(),
+      content: trimmedContent,
       createdAt: DateTime.now(),
       isComplete: true,
     );
@@ -124,11 +137,15 @@ Feel free to ask any questions!''',
   Future<void> retryLastMessage() async {
     if (!state.canRetry) return;
 
+    // Check if there are any user messages
+    final userMessages = state.messages.where((m) => m.role == MessageRole.user.value);
+    if (userMessages.isEmpty) {
+      _logger.w('No user message to retry');
+      return;
+    }
+
     // Get last user message
-    final lastUserMessage = state.messages.lastWhere(
-      (m) => m.role == MessageRole.user.value,
-      orElse: () => throw StateError('No user message to retry'),
-    );
+    final lastUserMessage = userMessages.last;
 
     state = state.copyWith(
       isLoading: true,

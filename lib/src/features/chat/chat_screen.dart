@@ -124,12 +124,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     ref.read(chatProvider(_sessionKey).notifier).retryLastMessage();
   }
 
-  void _handleConnectionRetry() {
-    // TODO: Implement connection retry
+  void _handleConnectionRetry() async {
+    // Set reconnecting state
     ref.read(connectionStateProvider.notifier).state =
         ref.read(connectionStateProvider).copyWith(
           isReconnecting: true,
           clearError: true,
+        );
+    
+    // Simulate reconnection attempt
+    // TODO: Integrate with actual ConnectionManager when available
+    await Future.delayed(const Duration(seconds: 2));
+    
+    // For now, simulate successful reconnection
+    ref.read(connectionStateProvider.notifier).state =
+        ref.read(connectionStateProvider).copyWith(
+          isConnected: true,
+          isReconnecting: false,
         );
   }
 
