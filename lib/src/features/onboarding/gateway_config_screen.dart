@@ -4,20 +4,33 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'pairing_screen.dart';
+import '../../core/api/gateway_client.dart';
+import '../../core/api/auth_service.dart';
 
 /// Gateway configuration screen
 class GatewayConfigScreen extends ConsumerStatefulWidget {
-  const GatewayConfigScreen({super.key});
+  final String initialUrl;
+
+  const GatewayConfigScreen({
+    super.key,
+    this.initialUrl = '',
+  });
 
   @override
   ConsumerState<GatewayConfigScreen> createState() => _GatewayConfigScreenState();
 }
 
 class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
-  final _urlController = TextEditingController();
+  late final TextEditingController _urlController;
   bool _isTesting = false;
   String? _testResult;
   bool? _testSuccess;
+
+  @override
+  void initState() {
+    super.initState();
+    _urlController = TextEditingController(text: widget.initialUrl);
+  }
 
   @override
   void dispose() {
@@ -171,17 +184,48 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
         return;
       }
 
-      // TODO: Implement actual connection test
-      // For now, simulate a successful test
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Simulate success (in real implementation, would actually test connection)
-      if (mounted) {
-        setState(() {
-          _testResult = 'Connection successful! Gateway is reachable.';
-          _testSuccess = true;
-          _isTesting = false;
-        });
+      // Try to create a Gateway client and test connection
+      final authService = AuthService();
+      final client = GatewayClient(
+        gatewayUrl: url,
+        authService: authService,
+      );
+
+      // Attempt to connect with a short timeout
+      try {
+        await client.connect(
+          version: '1.0.0',
+          token: null,
+          locale: 'zh-CN',
+        ).timeout(const Duration(seconds: 5));
+        
+        // If we get here, connection was successful
+        await client.disconnect();
+        
+        if (mounted) {
+          setState(() {
+            _testResult = 'Connection successful! Gateway is reachable.';
+            _testSuccess = true;
+            _isTesting = false;
+          });
+        }
+      } catch (e) {
+        // Connection failed, but let's check if it's just auth-related
+        // A "handshake failed" or "unauthorized" means the server is reachable
+        final errorStr = e.toString().toLowerCase();
+        if (errorStr.contains('handshake') || 
+            errorStr.contains('unauthorized') ||
+            errorStr.contains('auth')) {
+          if (mounted) {
+            setState(() {
+              _testResult = 'Gateway reachable. Authentication required.';
+              _testSuccess = true;
+              _isTesting = false;
+            });
+          }
+        } else {
+          rethrow;
+        }
       }
     } catch (e) {
       if (mounted) {

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings/settings_controller.dart';
 import '../chat/chat_screen.dart';
+import 'app_bootstrap.dart';
 
 /// Pairing screen for device authentication
 class PairingScreen extends ConsumerStatefulWidget {
@@ -253,6 +254,14 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
                 );
               },
               icon: const Icon(Icons.copy_rounded),
+              tooltip: 'Copy code',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}),
               tooltip: 'Copy code',
             ),
           ],

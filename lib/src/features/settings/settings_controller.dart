@@ -151,10 +151,26 @@ class SettingsNotifier extends Notifier<SettingsState> {
   /// Set gateway URL
   Future<void> setGatewayUrl(String url) async {
     try {
+      // Check if URL is changing
+      final oldUrl = state.gatewayUrl;
+      final isChanging = oldUrl != null && oldUrl.isNotEmpty && oldUrl != url;
+      
       // Save to both storages
       await _appSettings.setGatewayUrl(url);
       await _secureStorage.setGatewayUrl(url);
-      state = state.copyWith(gatewayUrl: url);
+      
+      // If URL is changing, clear old auth credentials
+      if (isChanging) {
+        await _appSettings.clearAuthInfo();
+        await _secureStorage.clearAll();
+        state = state.copyWith(
+          gatewayUrl: url,
+          clearDeviceToken: true,
+          clearDevicePublicKey: true,
+        );
+      } else {
+        state = state.copyWith(gatewayUrl: url);
+      }
     } catch (e) {
       state = state.copyWith(error: 'Failed to save gateway URL: $e');
     }

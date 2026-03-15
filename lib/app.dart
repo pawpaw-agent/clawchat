@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'src/features/chat/chat_screen.dart';
 import 'src/features/settings/settings_controller.dart';
 import 'src/features/onboarding/onboarding_screen.dart';
+import 'src/features/onboarding/gateway_config_screen.dart';
 import 'src/features/onboarding/app_bootstrap.dart';
+import 'src/shared/widgets/main_shell.dart';
 
 class ClawChatApp extends ConsumerWidget {
   const ClawChatApp({super.key});
@@ -31,19 +32,22 @@ class ClawChatApp extends ConsumerWidget {
         useMaterial3: true,
       ),
       themeMode: themeMode,
-      home: _buildHome(bootstrapState),
+      home: _buildHome(bootstrapState, ref),
     );
   }
 
-  Widget _buildHome(BootstrapState state) {
+  Widget _buildHome(BootstrapState state, WidgetRef ref) {
     switch (state) {
       case BootstrapState.needsOnboarding:
         return const OnboardingScreen();
       case BootstrapState.needsPairing:
-        // If pairing is needed, we still show onboarding to reconfigure
-        return const OnboardingScreen();
+        // Gateway is configured but not paired - go to gateway config
+        final settings = ref.read(settingsProvider);
+        return GatewayConfigScreen(
+          initialUrl: settings.gatewayUrl ?? '',
+        );
       case BootstrapState.ready:
-        return const ChatScreen();
+        return const MainShell();
     }
   }
 }
