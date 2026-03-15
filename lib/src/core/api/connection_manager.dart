@@ -398,4 +398,4 @@ extension ManagedGatewayConnectionStateCopyWith on ManagedGatewayConnectionState
       lastError: lastError ?? this.lastError,
     );
   }
-}}
+}
