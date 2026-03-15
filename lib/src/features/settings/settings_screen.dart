@@ -4,7 +4,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'settings_controller.dart';
-import '../../core/storage/app_settings.dart';
 
 /// Settings screen
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -136,21 +135,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Card(
             child: Column(
               children: [
-                RadioListTile<AppThemeMode>(
+                RadioListTile<ThemeMode>(
                   title: const Text('System Default'),
-                  value: AppThemeMode.system,
+                  value: ThemeMode.system,
                   groupValue: settings.themeMode,
                   onChanged: (value) => _setThemeMode(value!),
                 ),
-                RadioListTile<AppThemeMode>(
+                RadioListTile<ThemeMode>(
                   title: const Text('Light'),
-                  value: AppThemeMode.light,
+                  value: ThemeMode.light,
                   groupValue: settings.themeMode,
                   onChanged: (value) => _setThemeMode(value!),
                 ),
-                RadioListTile<AppThemeMode>(
+                RadioListTile<ThemeMode>(
                   title: const Text('Dark'),
-                  value: AppThemeMode.dark,
+                  value: ThemeMode.dark,
                   groupValue: settings.themeMode,
                   onChanged: (value) => _setThemeMode(value!),
                 ),
@@ -165,10 +164,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Card(
             child: Column(
               children: [
-                ListTile(
-                  title: const Text('ClawChat'),
-                  subtitle: const Text('Direct & Secure AI Chat'),
-                  trailing: const Text('v1.0.0'),
+                const ListTile(
+                  title: Text('ClawChat'),
+                  subtitle: Text('Direct & Secure AI Chat'),
+                  trailing: Text('v1.0.0'),
                 ),
                 ListTile(
                   title: const Text('OpenClaw'),
@@ -236,7 +235,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _setThemeMode(AppThemeMode mode) async {
+  Future<void> _setThemeMode(ThemeMode mode) async {
     await ref.read(settingsProvider.notifier).setThemeMode(mode);
   }
 }
