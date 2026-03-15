@@ -318,8 +318,11 @@ void main() {
       await notifier.togglePin(session2.key);
 
       final sorted = notifier.state.sortedSessions;
-      expect(sorted.first.key, session2.key);
-      expect(sorted.last.key, session1.key);
+      // Session2 should be pinned and appear before session1
+      final session2Index = sorted.indexWhere((s) => s.key == session2.key);
+      final session1Index = sorted.indexWhere((s) => s.key == session1.key);
+      expect(session2Index, lessThan(session1Index));
+      expect(sorted[session2Index].isPinned, isTrue);
     });
 
     test('activeSessions filters out archived', () async {
