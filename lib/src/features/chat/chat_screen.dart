@@ -153,7 +153,6 @@ class _ConnectionStatus extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // TODO: Get real connection state from provider
     // For now, show a placeholder (disconnected state)
-    const isConnected = false;
     final theme = Theme.of(context);
 
     return Container(
