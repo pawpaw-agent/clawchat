@@ -136,8 +136,6 @@ class ConnectionManager {
     String? token,
     String locale = 'zh-CN',
   }) async {
-    _storedLocale = locale;
-
     // Initialize reconnect handler
     reconnectHandler.initialize(
       version: version,

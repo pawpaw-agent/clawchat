@@ -84,14 +84,9 @@ class MessageListState extends ConsumerState<MessageList> {
     final controller = widget.scrollController;
     if (controller == null || !controller.hasClients) return;
 
-    // Detect user scroll (scrolling up)
-    if (controller.position.userScrollDirection != ScrollDirection.idle) {
-      _isUserScrolling = true;
-
-      // Disable auto-scroll if user scrolls up
-      if (controller.position.userScrollDirection == ScrollDirection.reverse) {
-        _autoScrollEnabled = false;
-      }
+    // Disable auto-scroll if user scrolls up
+    if (controller.position.userScrollDirection == ScrollDirection.reverse) {
+      _autoScrollEnabled = false;
     }
 
     // Re-enable auto-scroll when user scrolls to bottom
@@ -209,7 +204,6 @@ class MessageListState extends ConsumerState<MessageList> {
         'message_list_${widget.sessionKey}',
         frameTime,
       );
-      _frameCount++;
     }
     _lastFrameTime = now;
   }
@@ -240,8 +234,6 @@ class MessageListState extends ConsumerState<MessageList> {
         _itemCache.remove(lastMessage.id);
       }
     }
-
-    _lastMessageCount = newMessages.length;
   }
 
   void _retryMessage(Message message) {
