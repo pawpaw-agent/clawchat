@@ -11,6 +11,7 @@ import 'package:crypto/crypto.dart';
 import 'package:uuid/uuid.dart';
 
 import 'gateway_protocol.dart';
+import '../errors/app_exception.dart';
 
 /// Service for device authentication with OpenClaw Gateway
 class AuthService {
@@ -116,7 +117,10 @@ class AuthService {
   Future<SignatureResult> signChallenge(String nonce) async {
     final keys = await getDeviceKeys();
     if (keys == null) {
-      throw AuthException('No device keys found. Generate keys first.');
+      throw AuthException(
+        type: AuthErrorType.notPaired,
+        details: 'No device keys found. Generate keys first.',
+      );
     }
 
     final signedAt = DateTime.now().millisecondsSinceEpoch;
@@ -137,7 +141,10 @@ class AuthService {
     final keys = await getDeviceKeys();
     
     if (keys == null) {
-      throw AuthException('No device keys found');
+      throw AuthException(
+        type: AuthErrorType.notPaired,
+        details: 'No device keys found',
+      );
     }
 
     final signatureResult = await signChallenge(nonce);
@@ -193,13 +200,4 @@ class SignatureResult {
     required this.signature,
     required this.signedAt,
   });
-}
-
-/// Authentication exception
-class AuthException implements Exception {
-  final String message;
-  const AuthException(this.message);
-
-  @override
-  String toString() => 'AuthException: $message';
 }

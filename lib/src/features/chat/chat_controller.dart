@@ -1,44 +1,61 @@
 /// Chat controller with Riverpod state management
 library;
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/models/message.dart';
+import '../../core/errors/app_exception.dart';
+import '../../core/errors/error_handler.dart';
 
 /// Message state for a chat session
 class ChatState {
   final List<Message> messages;
   final bool isLoading;
-  final String? error;
+  final bool isRetrying;
+  final AppException? error;
 
   const ChatState({
     this.messages = const [],
     this.isLoading = false,
+    this.isRetrying = false,
     this.error,
   });
 
   ChatState copyWith({
     List<Message>? messages,
     bool? isLoading,
-    String? error,
+    bool? isRetrying,
+    AppException? error,
+    bool clearError = false,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      isRetrying: isRetrying ?? this.isRetrying,
+      error: clearError ? null : (error ?? this.error),
     );
   }
+
+  /// Whether there's an error
+  bool get hasError => error != null;
+
+  /// Whether error is recoverable (can retry)
+  bool get canRetry => error?.isRecoverable ?? false;
 }
 
-/// Chat controller notifier
-class ChatNotifier extends StateNotifier<ChatState> {
+/// Chat controller notifier with error handling
+class ChatNotifier extends StateNotifier<ChatState> with ErrorHandlingMixin {
   final Uuid _uuid;
   final String sessionKey;
+  final Ref _ref;
 
   ChatNotifier({
     Uuid? uuid,
     required this.sessionKey,
+    required Ref ref,
   })  : _uuid = uuid ?? const Uuid(),
+        _ref = ref,
         super(const ChatState()) {
     _loadMockData();
   }
@@ -100,10 +117,36 @@ Feel free to ask any questions!''',
     state = state.copyWith(
       messages: [...state.messages, userMessage],
       isLoading: true,
+      clearError: true,
     );
 
     // Simulate AI response with streaming
     await _simulateAIResponse(content);
+  }
+
+  /// Retry the last failed operation
+  Future<void> retryLastMessage() async {
+    if (!state.canRetry) return;
+
+    // Get last user message
+    final lastUserMessage = state.messages.lastWhere(
+      (m) => m.role == MessageRole.user.value,
+      orElse: () => throw StateError('No user message to retry'),
+    );
+
+    state = state.copyWith(
+      isLoading: true,
+      isRetrying: true,
+      clearError: true,
+    );
+
+    // Retry the AI response
+    await _simulateAIResponse(lastUserMessage.content);
+  }
+
+  /// Clear error state
+  void clearError() {
+    state = state.copyWith(clearError: true);
   }
 
   /// Simulate AI response (mock for UI development)
@@ -125,50 +168,68 @@ Feel free to ask any questions!''',
       messages: [...state.messages, streamingMessage],
     );
 
-    // Simulate streaming text
-    final responses = _getMockResponse(userContent);
-    String fullContent = '';
+    try {
+      // Simulate streaming text
+      final responses = _getMockResponse(userContent);
+      String fullContent = '';
 
-    for (final chunk in responses) {
-      await Future.delayed(const Duration(milliseconds: 50));
-      fullContent += chunk;
-      
+      for (final chunk in responses) {
+        await Future.delayed(const Duration(milliseconds: 50));
+        fullContent += chunk;
+
+        state = state.copyWith(
+          messages: state.messages.map((m) {
+            if (m.id == responseId) {
+              return m.copyWith(content: fullContent);
+            }
+            return m;
+          }).toList(),
+        );
+      }
+
+      // Mark as complete
       state = state.copyWith(
         messages: state.messages.map((m) {
           if (m.id == responseId) {
-            return m.copyWith(content: fullContent);
+            return m.copyWith(
+              isStreaming: false,
+              isComplete: true,
+            );
           }
           return m;
         }).toList(),
+        isLoading: false,
+        isRetrying: false,
+      );
+    } catch (e, stackTrace) {
+      // Handle error using unified error handling
+      final result = handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'ChatNotifier._simulateAIResponse',
+      );
+
+      // Remove the streaming message
+      state = state.copyWith(
+        messages: state.messages.where((m) => m.id != responseId).toList(),
+        isLoading: false,
+        isRetrying: false,
+        error: result.exception,
       );
     }
-
-    // Mark as complete
-    state = state.copyWith(
-      messages: state.messages.map((m) {
-        if (m.id == responseId) {
-          return m.copyWith(
-            isStreaming: false,
-            isComplete: true,
-          );
-        }
-        return m;
-      }).toList(),
-      isLoading: false,
-    );
   }
 
   /// Get mock AI response based on user input
   List<String> _getMockResponse(String input) {
     final lower = input.toLowerCase();
-    
+
     if (lower.contains('hello') || lower.contains('hi')) {
       return 'Hello! Great to hear from you. How can I assist you today?'
           .split('')
           .map((c) => c == ' ' ? ' ' : c)
           .toList();
     }
-    
+
     if (lower.contains('help')) {
       return '''I'm here to help! Here are some things I can do:
 - Answer questions
@@ -180,7 +241,7 @@ What would you like to know?'''
           .split('')
           .toList();
     }
-    
+
     if (lower.contains('code') || lower.contains('flutter')) {
       return '''Flutter is a great choice for cross-platform development!
 
@@ -220,10 +281,52 @@ Want to learn more?'''
 
 /// Provider for chat controller
 final chatProvider = StateNotifierProvider.family<ChatNotifier, ChatState, String>(
-  (ref, sessionKey) => ChatNotifier(sessionKey: sessionKey),
+  (ref, sessionKey) => ChatNotifier(sessionKey: sessionKey, ref: ref),
 );
 
 /// Provider for current session key (mock)
 final currentSessionKeyProvider = Provider<String>((ref) {
   return 'session-default';
+});
+
+/// Connection state for the chat
+class ConnectionState {
+  final bool isConnected;
+  final bool isConnecting;
+  final bool isReconnecting;
+  final int reconnectAttempts;
+  final AppException? lastError;
+
+  const ConnectionState({
+    this.isConnected = false,
+    this.isConnecting = false,
+    this.isReconnecting = false,
+    this.reconnectAttempts = 0,
+    this.lastError,
+  });
+
+  ConnectionState copyWith({
+    bool? isConnected,
+    bool? isConnecting,
+    bool? isReconnecting,
+    int? reconnectAttempts,
+    AppException? lastError,
+    bool clearError = false,
+  }) {
+    return ConnectionState(
+      isConnected: isConnected ?? this.isConnected,
+      isConnecting: isConnecting ?? this.isConnecting,
+      isReconnecting: isReconnecting ?? this.isReconnecting,
+      reconnectAttempts: reconnectAttempts ?? this.reconnectAttempts,
+      lastError: clearError ? null : (lastError ?? this.lastError),
+    );
+  }
+
+  bool get hasError => lastError != null;
+  bool get canRetry => lastError?.isRecoverable ?? false;
+}
+
+/// Connection state provider
+final connectionStateProvider = StateProvider<ConnectionState>((ref) {
+  return const ConnectionState();
 });

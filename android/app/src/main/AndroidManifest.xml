@@ -37,13 +37,34 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        
+        <!-- Firebase Cloud Messaging -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="clawchat_messages"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_launcher_foreground"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/ic_launcher_background"/>
             
         <!-- Foreground Service for WebSocket -->
         <service
-            android:name=".platform.WebSocketService"
+            android:name=".platform.ForegroundService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync"/>
+        
+        <!-- Firebase Messaging Service -->
+        <service
+            android:name=".platform.FirebaseService"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
             
     </application>
 </manifest>

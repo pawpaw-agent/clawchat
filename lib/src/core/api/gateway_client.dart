@@ -5,12 +5,13 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:uuid/uuid.dart';
+import 'package:uuid/Uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:logger/logger.dart';
 
 import 'gateway_protocol.dart';
 import 'auth_service.dart';
+import '../errors/app_exception.dart';
 
 /// Callback for connection state changes
 typedef ConnectionStateCallback = void Function(ConnectionState state);
@@ -70,7 +71,10 @@ class GatewayClient {
   /// Connect to gateway
   Future<void> connect() async {
     if (_state != ConnectionState.disconnected) {
-      throw GatewayException('Already connecting or connected');
+      throw WebSocketException(
+        type: WebSocketErrorType.protocolError,
+        details: 'Already connecting or connected',
+      );
     }
 
     _setState(ConnectionState.connecting);
@@ -91,10 +95,19 @@ class GatewayClient {
 
       // Wait for challenge
       await _waitForChallenge();
+    } on WebSocketException {
+      _setState(ConnectionState.error);
+      rethrow;
+    } on NetworkException {
+      _setState(ConnectionState.error);
+      rethrow;
     } catch (e) {
       _setState(ConnectionState.error);
       _logger.e('Connection failed', error: e);
-      rethrow;
+      throw WebSocketException(
+        type: WebSocketErrorType.connectionLost,
+        details: e.toString(),
+      );
     }
   }
 
@@ -117,7 +130,10 @@ class GatewayClient {
       const Duration(seconds: 10),
       onTimeout: () {
         sub?.cancel();
-        throw GatewayException('Timeout waiting for challenge');
+        throw WebSocketException(
+          type: WebSocketErrorType.handshakeFailed,
+          details: 'Timeout waiting for challenge',
+        );
       },
     );
     
@@ -131,7 +147,10 @@ class GatewayClient {
     String locale = 'zh-CN',
   }) async {
     if (_challengeNonce == null) {
-      throw GatewayException('No challenge received. Call connect() first.');
+      throw WebSocketException(
+        type: WebSocketErrorType.handshakeFailed,
+        details: 'No challenge received. Call connect() first.',
+      );
     }
 
     _logger.i('Completing handshake...');
@@ -170,9 +189,24 @@ class GatewayClient {
       _setState(ConnectionState.error);
       final error = response.error;
       if (error != null) {
-        throw GatewayException('${error.code}: ${error.message}');
+        // Check for auth-related errors
+        final code = error.code?.toString() ?? '';
+        if (code.contains('auth') || code.contains('token') || code.contains('unauthorized')) {
+          throw AuthException(
+            type: AuthErrorType.invalidToken,
+            details: error.message,
+          );
+        }
+        throw ServerException(
+          type: ServerErrorType.unknown,
+          code: error.code?.toString(),
+          details: error.message,
+        );
       }
-      throw GatewayException('Handshake failed');
+      throw WebSocketException(
+        type: WebSocketErrorType.handshakeFailed,
+        details: 'Handshake failed',
+      );
     }
 
     // Parse connect response
@@ -214,7 +248,10 @@ class GatewayClient {
       timeout,
       onTimeout: () {
         _pendingRequests.remove(id);
-        throw GatewayException('Request timeout: $method');
+        throw NetworkException(
+          type: NetworkErrorType.timeout,
+          details: 'Request timeout: $method',
+        );
       },
     );
   }
@@ -243,7 +280,10 @@ class GatewayClient {
     // Complete all pending requests with error
     for (final completer in _pendingRequests.values) {
       if (!completer.isCompleted) {
-        completer.completeError(GatewayException('Disconnected'));
+        completer.completeError(WebSocketException(
+          type: WebSocketErrorType.connectionLost,
+          details: 'Disconnected',
+        ));
       }
     }
     _pendingRequests.clear();
@@ -258,7 +298,10 @@ class GatewayClient {
 
   void _sendFrame(RequestFrame frame) {
     if (_channel == null) {
-      throw GatewayException('Not connected');
+      throw WebSocketException(
+        type: WebSocketErrorType.connectionLost,
+        details: 'Not connected',
+      );
     }
     
     _channel!.sink.add(jsonEncode(frame.toJson()));
@@ -330,13 +373,4 @@ enum ConnectionState {
   connected,
   authenticated,
   error,
-}
-
-/// Gateway exception
-class GatewayException implements Exception {
-  final String message;
-  const GatewayException(this.message);
-
-  @override
-  String toString() => 'GatewayException: $message';
 }

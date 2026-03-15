@@ -3,17 +3,21 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/session.dart';
+import '../../core/errors/app_exception.dart';
+import '../../core/errors/error_handler.dart';
 
 /// Session state
 class SessionState {
   final List<Session> sessions;
   final bool isLoading;
-  final String? error;
+  final bool isRefreshing;
+  final AppException? error;
   final String? activeSessionKey;
 
   const SessionState({
     this.sessions = const [],
     this.isLoading = false,
+    this.isRefreshing = false,
     this.error,
     this.activeSessionKey,
   });
@@ -21,14 +25,17 @@ class SessionState {
   SessionState copyWith({
     List<Session>? sessions,
     bool? isLoading,
-    String? error,
+    bool? isRefreshing,
+    AppException? error,
     String? activeSessionKey,
     bool clearActiveSession = false,
+    bool clearError = false,
   }) {
     return SessionState(
       sessions: sessions ?? this.sessions,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+      error: clearError ? null : (error ?? this.error),
       activeSessionKey: clearActiveSession ? null : (activeSessionKey ?? this.activeSessionKey),
     );
   }
@@ -61,11 +68,21 @@ class SessionState {
     });
     return sorted;
   }
+
+  /// Whether there's an error
+  bool get hasError => error != null;
+
+  /// Whether error is recoverable (can retry)
+  bool get canRetry => error?.isRecoverable ?? false;
 }
 
-/// Session notifier
-class SessionNotifier extends StateNotifier<SessionState> {
-  SessionNotifier() : super(const SessionState()) {
+/// Session notifier with error handling
+class SessionNotifier extends StateNotifier<SessionState> with ErrorHandlingMixin {
+  final Ref _ref;
+
+  SessionNotifier({required Ref ref})
+      : _ref = ref,
+        super(const SessionState()) {
     _loadMockData();
   }
 
@@ -135,67 +152,116 @@ class SessionNotifier extends StateNotifier<SessionState> {
     String? label,
     String? agentId,
   }) async {
-    final now = DateTime.now();
-    final newSession = Session(
-      key: 'session-${now.millisecondsSinceEpoch}',
-      label: label ?? 'New Chat',
-      agentId: agentId ?? 'agent-forge',
-      createdAt: now,
-      updatedAt: now,
-      lastActiveAt: now,
-      messageCount: 0,
-    );
+    try {
+      final now = DateTime.now();
+      final newSession = Session(
+        key: 'session-${now.millisecondsSinceEpoch}',
+        label: label ?? 'New Chat',
+        agentId: agentId ?? 'agent-forge',
+        createdAt: now,
+        updatedAt: now,
+        lastActiveAt: now,
+        messageCount: 0,
+      );
 
-    state = state.copyWith(
-      sessions: [...state.sessions, newSession],
-      activeSessionKey: newSession.key,
-    );
+      state = state.copyWith(
+        sessions: [...state.sessions, newSession],
+        activeSessionKey: newSession.key,
+        clearError: true,
+      );
 
-    return newSession;
+      return newSession;
+    } catch (e, stackTrace) {
+      final result = handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'SessionNotifier.createSession',
+      );
+      state = state.copyWith(error: result.exception);
+      rethrow;
+    }
   }
 
   /// Delete session
   Future<void> deleteSession(String sessionKey) async {
-    final sessions = state.sessions.where((s) => s.key != sessionKey).toList();
-    state = state.copyWith(
-      sessions: sessions,
-      activeSessionKey: state.activeSessionKey == sessionKey
-          ? null
-          : state.activeSessionKey,
-    );
+    try {
+      final sessions = state.sessions.where((s) => s.key != sessionKey).toList();
+      state = state.copyWith(
+        sessions: sessions,
+        activeSessionKey: state.activeSessionKey == sessionKey
+            ? null
+            : state.activeSessionKey,
+        clearError: true,
+      );
+    } catch (e, stackTrace) {
+      final result = handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'SessionNotifier.deleteSession',
+      );
+      state = state.copyWith(error: result.exception);
+      rethrow;
+    }
   }
 
   /// Archive/unarchive session
   Future<void> toggleArchive(String sessionKey) async {
-    final sessions = state.sessions.map((s) {
-      if (s.key == sessionKey) {
-        return s.copyWith(isArchived: !s.isArchived);
-      }
-      return s;
-    }).toList();
-    state = state.copyWith(sessions: sessions);
+    try {
+      final sessions = state.sessions.map((s) {
+        if (s.key == sessionKey) {
+          return s.copyWith(isArchived: !s.isArchived);
+        }
+        return s;
+      }).toList();
+      state = state.copyWith(sessions: sessions, clearError: true);
+    } catch (e, stackTrace) {
+      final result = handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'SessionNotifier.toggleArchive',
+      );
+      state = state.copyWith(error: result.exception);
+    }
   }
 
   /// Pin/unpin session
   Future<void> togglePin(String sessionKey) async {
-    final sessions = state.sessions.map((s) {
-      if (s.key == sessionKey) {
-        return s.copyWith(isPinned: !s.isPinned);
-      }
-      return s;
-    }).toList();
-    state = state.copyWith(sessions: sessions);
+    try {
+      final sessions = state.sessions.map((s) {
+        if (s.key == sessionKey) {
+          return s.copyWith(isPinned: !s.isPinned);
+        }
+        return s;
+      }).toList();
+      state = state.copyWith(sessions: sessions, clearError: true);
+    } catch (e, stackTrace) {
+      final result = handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'SessionNotifier.togglePin',
+      );
+      state = state.copyWith(error: result.exception);
+    }
   }
 
   /// Update session label
   Future<void> updateLabel(String sessionKey, String label) async {
-    final sessions = state.sessions.map((s) {
-      if (s.key == sessionKey) {
-        return s.copyWith(label: label, updatedAt: DateTime.now());
-      }
-      return s;
-    }).toList();
-    state = state.copyWith(sessions: sessions);
+    try {
+      final sessions = state.sessions.map((s) {
+        if (s.key == sessionKey) {
+          return s.copyWith(label: label, updatedAt: DateTime.now());
+        }
+        return s;
+      }).toList();
+      state = state.copyWith(sessions: sessions, clearError: true);
+    } catch (e, stackTrace) {
+      final result = handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'SessionNotifier.updateLabel',
+      );
+      state = state.copyWith(error: result.exception);
+    }
   }
 
   /// Set active session
@@ -209,24 +275,55 @@ class SessionNotifier extends StateNotifier<SessionState> {
 
   /// Refresh sessions
   Future<void> refresh() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isRefreshing: true, clearError: true);
 
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    state = state.copyWith(isLoading: false);
+    try {
+      // Simulate network delay
+      await Future.delayed(const Duration(milliseconds: 300));
+      state = state.copyWith(isRefreshing: false);
+    } catch (e, stackTrace) {
+      final result = handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'SessionNotifier.refresh',
+      );
+      state = state.copyWith(
+        isRefreshing: false,
+        error: result.exception,
+      );
+    }
   }
 
   /// Clear all sessions
   Future<void> clearAll() async {
-    state = const SessionState();
+    try {
+      state = const SessionState();
+    } catch (e, stackTrace) {
+      final result = handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'SessionNotifier.clearAll',
+      );
+      state = state.copyWith(error: result.exception);
+    }
+  }
+
+  /// Clear error state
+  void clearError() {
+    state = state.copyWith(clearError: true);
+  }
+
+  /// Retry the last failed operation
+  Future<void> retry() async {
+    if (!state.canRetry) return;
+    await refresh();
   }
 }
 
 /// Session state provider
 final sessionProvider =
     StateNotifierProvider<SessionNotifier, SessionState>((ref) {
-  return SessionNotifier();
+  return SessionNotifier(ref: ref);
 });
 
 /// Active session provider

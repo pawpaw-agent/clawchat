@@ -1,56 +1,183 @@
-/// Session list screen
+/// Session list screen with pagination support
 /// Displays list of chat sessions with create/delete/archive functionality
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/session.dart';
+import '../../core/utils/list_optimizer.dart';
 import '../chat/chat_screen.dart';
 import 'session_controller.dart';
 import 'session_tile.dart';
 
-/// Session list screen
+/// Session list screen with pagination
 class SessionListScreen extends ConsumerStatefulWidget {
-  const SessionListScreen({super.key});
+  final int pageSize;
+  final ListOptimizationConfig? optimizationConfig;
+
+  const SessionListScreen({
+    super.key,
+    this.pageSize = 20,
+    this.optimizationConfig,
+  });
 
   @override
-  ConsumerState<SessionListScreen> createState() => _SessionListScreenState();
+  ConsumerState<SessionListScreen> createState() => SessionListScreenState();
 }
 
-class _SessionListScreenState extends ConsumerState<SessionListScreen> {
+/// Public state class for testing access
+class SessionListScreenState extends ConsumerState<SessionListScreen> {
   bool _showArchived = false;
+
+  // Pagination controllers for active and archived sessions
+  late final PaginationController<Session> _activePaginationController;
+  late final PaginationController<Session> _archivedPaginationController;
+
+  // Scroll controllers for detecting scroll to bottom
+  final ScrollController _activeScrollController = ScrollController();
+  final ScrollController _archivedScrollController = ScrollController();
+
+  // Current pagination state
+  PaginationState<Session> _activePaginationState = const PaginationState();
+  PaginationState<Session> _archivedPaginationState = const PaginationState();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize pagination controllers
+    _activePaginationController = PaginationController<Session>(
+      pageSize: widget.pageSize,
+      fetchPage: (page, size) => _fetchSessionsPage(page, size, false),
+    );
+
+    _archivedPaginationController = PaginationController<Session>(
+      pageSize: widget.pageSize,
+      fetchPage: (page, size) => _fetchSessionsPage(page, size, true),
+    );
+
+    // Add listeners for pagination state updates
+    _activePaginationController.addListener((state) {
+      if (mounted) {
+        setState(() {
+          _activePaginationState = state;
+        });
+      }
+    });
+
+    _archivedPaginationController.addListener((state) {
+      if (mounted) {
+        setState(() {
+          _archivedPaginationState = state;
+        });
+      }
+    });
+
+    // Setup scroll listeners for infinite scroll
+    _activeScrollController.addListener(() => _onScroll(_activeScrollController, false));
+    _archivedScrollController.addListener(() => _onScroll(_archivedScrollController, true));
+
+    // Configure image cache
+    final config = widget.optimizationConfig ?? ListOptimizationConfig.chatList;
+    ImageCacheConfig.configureForMemoryLimit(config.imageCacheMB);
+
+    // Load initial data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _activeScrollController.dispose();
+    _archivedScrollController.dispose();
+    _activePaginationController.dispose();
+    _archivedPaginationController.dispose();
+    super.dispose();
+  }
+
+  /// Fetch a page of sessions
+  Future<List<Session>> _fetchSessionsPage(int page, int size, bool archived) async {
+    final allSessions = ref.read(sessionProvider).sessions;
+    final filtered = allSessions.where((s) => s.isArchived == archived).toList();
+
+    // Sort by lastActiveAt (newest first)
+    filtered.sort((a, b) {
+      final aTime = a.lastActiveAt ?? a.updatedAt ?? a.createdAt;
+      final bTime = b.lastActiveAt ?? b.updatedAt ?? b.createdAt;
+      if (aTime == null && bTime == null) return 0;
+      if (aTime == null) return 1;
+      if (bTime == null) return -1;
+      return bTime.compareTo(aTime);
+    });
+
+    // Calculate page slice
+    final startIndex = page * size;
+    final endIndex = startIndex + size;
+
+    if (startIndex >= filtered.length) {
+      return [];
+    }
+
+    return filtered.sublist(
+      startIndex,
+      endIndex.clamp(0, filtered.length),
+    );
+  }
+
+  /// Load initial data
+  Future<void> _loadInitialData() async {
+    await Future.wait([
+      _activePaginationController.loadInitial(),
+      _archivedPaginationController.loadInitial(),
+    ]);
+  }
+
+  /// Handle scroll events for infinite loading
+  void _onScroll(ScrollController controller, bool isArchived) {
+    if (!controller.hasClients) return;
+
+    final maxScroll = controller.position.maxScrollExtent;
+    final currentScroll = controller.position.pixels;
+    const threshold = 200.0; // Load more when 200px from bottom
+
+    if (maxScroll - currentScroll <= threshold) {
+      if (isArchived) {
+        _archivedPaginationController.loadMore();
+      } else {
+        _activePaginationController.loadMore();
+      }
+    }
+  }
+
+  /// Refresh all data
+  Future<void> refresh() async {
+    await ref.read(sessionProvider.notifier).refresh();
+    await _loadInitialData();
+  }
 
   @override
   Widget build(BuildContext context) {
     final sessionState = ref.watch(sessionProvider);
-    final activeSessions = ref.watch(activeSessionsProvider);
-    final archivedSessions = ref.watch(archivedSessionsProvider);
 
     return Scaffold(
-      appBar: _buildAppBar(context, archivedSessions),
-      body: _buildBody(
-        context,
-        sessionState,
-        activeSessions,
-        archivedSessions,
-      ),
+      appBar: _buildAppBar(context),
+      body: _buildBody(context, sessionState),
       floatingActionButton: _buildFAB(context),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, List<Session> archivedSessions) {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       title: const Text('ClawChat'),
       actions: [
         // Search button
         IconButton(
           icon: const Icon(Icons.search),
-          onPressed: () {
-            _showSearch(context);
-          },
+          onPressed: () => _showSearch(context),
         ),
         // Archive toggle
-        if (archivedSessions.isNotEmpty)
+        if (_archivedPaginationState.items.isNotEmpty)
           IconButton(
             icon: Icon(
               _showArchived ? Icons.inbox : Icons.archive_outlined,
@@ -64,9 +191,7 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
         // Settings
         IconButton(
           icon: const Icon(Icons.settings),
-          onPressed: () {
-            _navigateToSettings(context);
-          },
+          onPressed: () => _navigateToSettings(context),
         ),
       ],
       bottom: _buildConnectionStatusBar(context),
@@ -74,8 +199,6 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
   }
 
   PreferredSizeWidget _buildConnectionStatusBar(BuildContext context) {
-    // TODO: Get actual connection state from provider
-    // Currently hardcoded to show "Disconnected" state
     return PreferredSize(
       preferredSize: const Size.fromHeight(24),
       child: Container(
@@ -103,79 +226,47 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    SessionState sessionState,
-    List<Session> activeSessions,
-    List<Session> archivedSessions,
-  ) {
+  Widget _buildBody(BuildContext context, SessionState sessionState) {
     if (sessionState.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (sessionState.error != null) {
       return _buildError(context, sessionState.error!);
     }
 
-    final sessions = _showArchived ? archivedSessions : activeSessions;
+    final paginationState = _showArchived ? _archivedPaginationState : _activePaginationState;
+    final scrollController = _showArchived ? _archivedScrollController : _activeScrollController;
 
-    if (sessions.isEmpty) {
+    if (paginationState.isFirstLoad) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (paginationState.items.isEmpty) {
       return _buildEmpty(context);
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(sessionProvider.notifier).refresh(),
-      child: ListView.builder(
-        itemCount: sessions.length + (_showArchived ? 0 : _pinnedCount(activeSessions)),
-        itemBuilder: (context, index) {
-          // Show pinned section header
-          if (!_showArchived && index == 0 && _pinnedCount(activeSessions) > 0) {
-            return _buildSectionHeader('Pinned');
+      onRefresh: refresh,
+      child: _PaginatedSessionList(
+        sessions: paginationState.items,
+        scrollController: scrollController,
+        isLoadingMore: paginationState.isLoading && paginationState.items.isNotEmpty,
+        hasMore: paginationState.hasMore,
+        onLoadMore: () {
+          if (_showArchived) {
+            _archivedPaginationController.loadMore();
+          } else {
+            _activePaginationController.loadMore();
           }
-
-          final sessionIndex = _showArchived
-              ? index
-              : index - (_pinnedCount(activeSessions) > 0 ? 1 : 0);
-
-          if (sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return const SizedBox.shrink();
-          }
-
-          final session = sessions[sessionIndex];
-
-          // Show "Recent" section header after pinned sessions
-          if (!_showArchived &&
-              index == _pinnedCount(activeSessions) + 1 &&
-              _pinnedCount(activeSessions) > 0 &&
-              sessions.any((s) => !s.isPinned)) {
-            return _buildSectionHeader('Recent');
-          }
-
-          return SessionTile(
-            session: session,
-            isActive: sessionState.activeSessionKey == session.key,
-            onTap: () => _openSession(session),
-            onDelete: (s) => _deleteSession(s),
-            onArchive: (s) => _toggleArchive(s),
-            onPin: (s) => _togglePin(s),
-          );
         },
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+        activeSessionKey: sessionState.activeSessionKey,
+        onSessionTap: _openSession,
+        onDelete: _deleteSession,
+        onArchive: _toggleArchive,
+        onPin: _togglePin,
+        showPinnedSection: !_showArchived,
+        config: widget.optimizationConfig ?? ListOptimizationConfig.chatList,
       ),
     );
   }
@@ -235,7 +326,7 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: () => ref.read(sessionProvider.notifier).refresh(),
+            onPressed: refresh,
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
           ),
@@ -250,10 +341,6 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
       icon: const Icon(Icons.add),
       label: const Text('New Chat'),
     );
-  }
-
-  int _pinnedCount(List<Session> sessions) {
-    return sessions.where((s) => s.isPinned).length;
   }
 
   void _showSearch(BuildContext context) {
@@ -276,8 +363,6 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => const ChatScreen(),
-        // Pass session key when ChatScreen supports it
-        // settings: RouteSettings(arguments: session.key),
       ),
     );
   }
@@ -286,6 +371,9 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     await ref.read(sessionProvider.notifier).deleteSession(session.key);
+
+    // Refresh pagination
+    await _loadInitialData();
 
     scaffoldMessenger.showSnackBar(
       SnackBar(
@@ -302,6 +390,10 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
 
   void _toggleArchive(Session session) {
     ref.read(sessionProvider.notifier).toggleArchive(session.key);
+    // Refresh pagination after archive toggle
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _loadInitialData();
+    });
   }
 
   void _togglePin(Session session) {
@@ -309,9 +401,140 @@ class _SessionListScreenState extends ConsumerState<SessionListScreen> {
   }
 
   void _navigateToSettings(BuildContext context) {
-    // TODO: Navigate to settings screen
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Settings coming soon')),
+    );
+  }
+}
+
+/// Paginated session list with infinite scroll
+class _PaginatedSessionList extends StatelessWidget {
+  final List<Session> sessions;
+  final ScrollController scrollController;
+  final bool isLoadingMore;
+  final bool hasMore;
+  final VoidCallback onLoadMore;
+  final String? activeSessionKey;
+  final void Function(Session) onSessionTap;
+  final void Function(Session) onDelete;
+  final void Function(Session) onArchive;
+  final void Function(Session) onPin;
+  final bool showPinnedSection;
+  final ListOptimizationConfig config;
+
+  const _PaginatedSessionList({
+    required this.sessions,
+    required this.scrollController,
+    required this.isLoadingMore,
+    required this.hasMore,
+    required this.onLoadMore,
+    required this.activeSessionKey,
+    required this.onSessionTap,
+    required this.onDelete,
+    required this.onArchive,
+    required this.onPin,
+    required this.showPinnedSection,
+    required this.config,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Split sessions into pinned and unpinned
+    final pinnedSessions = sessions.where((s) => s.isPinned).toList();
+    final unpinnedSessions = sessions.where((s) => !s.isPinned).toList();
+
+    // Calculate total items
+    final hasPinned = showPinnedSection && pinnedSessions.isNotEmpty;
+    final totalItems = sessions.length +
+        (hasPinned ? 2 : 0) + // Section headers for Pinned and Recent
+        (isLoadingMore ? 1 : 0);
+
+    return ListView.builder(
+      controller: scrollController,
+      itemCount: totalItems,
+      cacheExtent: config.cacheExtent,
+      addAutomaticKeepAlives: config.useKeepAlive,
+      addRepaintBoundaries: true,
+      itemBuilder: (context, index) {
+        // Loading indicator at bottom
+        if (isLoadingMore && index == totalItems - 1) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        // Pinned section header
+        if (hasPinned && index == 0) {
+          return _buildSectionHeader(context, 'Pinned');
+        }
+
+        // Recent section header (after pinned items)
+        if (hasPinned && index == pinnedSessions.length + 1) {
+          return _buildSectionHeader(context, 'Recent');
+        }
+
+        // Calculate actual session index
+        int sessionIndex;
+        Session? session;
+
+        if (hasPinned) {
+          if (index <= pinnedSessions.length) {
+            // Pinned session
+            sessionIndex = index - 1;
+            if (sessionIndex >= 0 && sessionIndex < pinnedSessions.length) {
+              session = pinnedSessions[sessionIndex];
+            }
+          } else {
+            // Unpinned session
+            sessionIndex = index - pinnedSessions.length - 2;
+            if (sessionIndex >= 0 && sessionIndex < unpinnedSessions.length) {
+              session = unpinnedSessions[sessionIndex];
+            }
+          }
+        } else {
+          sessionIndex = index;
+          if (sessionIndex >= 0 && sessionIndex < sessions.length) {
+            session = sessions[sessionIndex];
+          }
+        }
+
+        if (session == null) {
+          return const SizedBox.shrink();
+        }
+
+        return RepaintBoundary(
+          key: ValueKey('session_${session.key}'),
+          child: SessionTile(
+            session: session,
+            isActive: activeSessionKey == session.key,
+            onTap: () => onSessionTap(session),
+            onDelete: onDelete,
+            onArchive: onArchive,
+            onPin: onPin,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }
@@ -327,9 +550,7 @@ class SessionSearchDelegate extends SearchDelegate<Session?> {
     return [
       IconButton(
         icon: const Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-        },
+        onPressed: () => query = '',
       ),
     ];
   }
@@ -338,9 +559,7 @@ class SessionSearchDelegate extends SearchDelegate<Session?> {
   Widget buildLeading(BuildContext context) {
     return IconButton(
       icon: const Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, null);
-      },
+      onPressed: () => close(context, null),
     );
   }
 
@@ -389,9 +608,7 @@ class SessionSearchDelegate extends SearchDelegate<Session?> {
         final session = results[index];
         return SessionTile(
           session: session,
-          onTap: () {
-            close(context, session);
-          },
+          onTap: () => close(context, session),
         );
       },
     );

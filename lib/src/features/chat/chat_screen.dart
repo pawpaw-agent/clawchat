@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'chat_controller.dart';
 import 'input_bar.dart';
 import 'message_list.dart';
+import '../../shared/widgets/error_banner.dart';
+import '../../shared/widgets/error_dialog.dart';
+import '../../core/errors/app_exception.dart';
 
 /// Main chat screen
 class ChatScreen extends ConsumerStatefulWidget {
@@ -36,6 +39,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(chatProvider(_sessionKey));
+    final connectionState = ref.watch(connectionStateProvider);
+
+    ref.listen<ChatState>(chatProvider(_sessionKey), (previous, next) {
+      // Show error dialog for non-recoverable auth errors
+      if (next.hasError && next.error is AuthException && !next.canRetry) {
+        final authError = next.error as AuthException;
+        showAuthErrorDialog(
+          context: context,
+          exception: authError,
+          onPair: () {
+            // TODO: Navigate to pairing screen
+          },
+        );
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -50,8 +68,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       body: Column(
         children: [
-          // Connection status indicator
-          const _ConnectionStatus(),
+          // Connection status banner
+          _ConnectionStatusBanner(
+            connectionState: connectionState,
+            onRetry: _handleConnectionRetry,
+          ),
+
+          // Error banner for chat errors
+          if (chatState.hasError)
+            AnimatedErrorBanner(
+              result: ErrorResult(
+                exception: chatState.error!,
+                wasLogged: true,
+                timestamp: DateTime.now(),
+              ),
+              onRetry: chatState.canRetry ? _handleRetry : null,
+              onDismiss: () {
+                ref.read(chatProvider(_sessionKey).notifier).clearError();
+              },
+              isCompact: true,
+            ),
 
           // Message list
           Expanded(
@@ -81,6 +117,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     ref.read(chatProvider(_sessionKey).notifier).sendMessage(text);
     _messageController.clear();
+  }
+
+  void _handleRetry() {
+    ref.read(chatProvider(_sessionKey).notifier).retryLastMessage();
+  }
+
+  void _handleConnectionRetry() {
+    // TODO: Implement connection retry
+    ref.read(connectionStateProvider.notifier).state =
+        ref.read(connectionStateProvider).copyWith(
+          isReconnecting: true,
+          clearError: true,
+        );
   }
 
   void _showOptionsMenu(BuildContext context) {
@@ -145,49 +194,91 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
-/// Connection status indicator
-class _ConnectionStatus extends ConsumerWidget {
-  const _ConnectionStatus();
+/// Connection status banner widget
+class _ConnectionStatusBanner extends StatelessWidget {
+  final ConnectionState connectionState;
+  final VoidCallback? onRetry;
+
+  const _ConnectionStatusBanner({
+    required this.connectionState,
+    this.onRetry,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: Get real connection state from provider
-    // For now, show a placeholder (disconnected state)
+  Widget build(BuildContext context) {
+    if (connectionState.isConnected && !connectionState.isConnecting) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+
+    if (connectionState.isConnecting || connectionState.isReconnecting) {
+      return Material(
+        color: theme.colorScheme.primaryContainer,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                connectionState.isReconnecting
+                    ? '正在重连... (${connectionState.reconnectAttempts})'
+                    : '正在连接...',
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Disconnected or error state
+    return NetworkStatusBanner(
+      isConnected: false,
+      onRetry: onRetry,
+    );
+  }
+}
+
+/// Typing indicator widget
+class TypingIndicator extends StatelessWidget {
+  const TypingIndicator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.errorContainer,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          Icon(
-            Icons.pending,
-            size: 16,
-            color: theme.colorScheme.onErrorContainer,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Disconnected',
-            style: TextStyle(
-              fontSize: 12,
-              color: theme.colorScheme.onErrorContainer,
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: theme.colorScheme.primary,
             ),
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {
-              // TODO: Trigger reconnect
-            },
-            child: Text(
-              'Tap to connect',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onErrorContainer,
-                decoration: TextDecoration.underline,
-              ),
+          const SizedBox(width: 12),
+          Text(
+            'AI is thinking...',
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 13,
             ),
           ),
         ],
