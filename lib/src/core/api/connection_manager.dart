@@ -63,7 +63,7 @@ class ManagedGatewayConnectionState {
 
   @override
   String toString() =>
-      'ManagedGatewayConnectionState(connection: $connectionState, network: ${networkStatus.connectionTypes}, pending: $pendingMessages)';
+      'ManagedGatewayConnectionState(connection: $connectionState, network: ${networkStatus.connectionType}, pending: $pendingMessages)';
 }
 
 /// Callback for managed connection state changes
