@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:logger/logger.dart';
 
 import 'gateway_protocol.dart';
@@ -23,7 +23,7 @@ class GatewayClient {
   final Uuid _uuid;
   final Logger _logger;
 
-  WebSocketChannel? _channel;
+  IOWebSocketChannel? _channel;
   StreamSubscription? _subscription;
   
   final Map<String, Completer<ResponseFrame>> _pendingRequests = {};
@@ -82,7 +82,7 @@ class GatewayClient {
 
     try {
       final uri = Uri.parse(gatewayUrl);
-      final channel = WebSocketChannel.connect(uri);
+      final channel = IOWebSocketChannel.connect(uri);
       _channel = channel;
 
       await channel.ready;
