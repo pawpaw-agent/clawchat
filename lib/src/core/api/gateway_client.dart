@@ -14,7 +14,7 @@ import 'auth_service.dart';
 import '../errors/app_exception.dart';
 
 /// Callback for connection state changes
-typedef ConnectionStateCallback = void Function(ConnectionState state);
+typedef GatewayConnectionStateCallback = void Function(GatewayConnectionState state);
 
 /// Main WebSocket client for OpenClaw Gateway
 class GatewayClient {
@@ -29,8 +29,8 @@ class GatewayClient {
   final Map<String, Completer<ResponseFrame>> _pendingRequests = {};
   final StreamController<EventFrame> _eventController = StreamController.broadcast();
   
-  ConnectionState _state = GatewayConnectionState.disconnected;
-  final List<ConnectionStateCallback> _stateCallbacks = [];
+  GatewayConnectionState _state = GatewayConnectionState.disconnected;
+  final List<GatewayConnectionStateCallback> _stateCallbacks = [];
   
   String? _challengeNonce;
   int _protocol = 3;
@@ -47,7 +47,7 @@ class GatewayClient {
         _logger = logger ?? Logger(printer: PrettyPrinter());
 
   /// Current connection state
-  ConnectionState get state => _state;
+  GatewayConnectionState get state => _state;
 
   /// Stream of events from gateway
   Stream<EventFrame> get eventStream => _eventController.stream;
@@ -59,12 +59,12 @@ class GatewayClient {
   bool get isAuthenticated => _state == GatewayConnectionState.authenticated;
 
   /// Subscribe to connection state changes
-  void onStateChange(ConnectionStateCallback callback) {
+  void onStateChange(GatewayConnectionStateCallback callback) {
     _stateCallbacks.add(callback);
   }
 
   /// Unsubscribe from connection state changes
-  void offStateChange(ConnectionStateCallback callback) {
+  void offStateChange(GatewayConnectionStateCallback callback) {
     _stateCallbacks.remove(callback);
   }
 
@@ -352,7 +352,7 @@ class GatewayClient {
     _setState(GatewayConnectionState.disconnected);
   }
 
-  void _setState(ConnectionState state) {
+  void _setState(GatewayConnectionState state) {
     _state = state;
     for (final callback in _stateCallbacks) {
       callback(state);

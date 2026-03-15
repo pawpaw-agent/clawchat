@@ -42,14 +42,14 @@ class ConnectionConfig {
 }
 
 /// Connection state with additional context
-class ManagedConnectionState {
-  final ConnectionState connectionState;
+class ManagedGatewayConnectionState {
+  final GatewayConnectionState connectionState;
   final NetworkStatus networkStatus;
   final bool isReconnecting;
   final int pendingMessages;
   final String? lastError;
 
-  const ManagedConnectionState({
+  const ManagedGatewayConnectionState({
     required this.connectionState,
     required this.networkStatus,
     this.isReconnecting = false,
@@ -63,11 +63,11 @@ class ManagedConnectionState {
 
   @override
   String toString() =>
-      'ManagedConnectionState(connection: $connectionState, network: ${networkStatus.connectionType}, pending: $pendingMessages)';
+      'ManagedGatewayConnectionState(connection: $connectionState, network: ${networkStatus.connectionTypes}, pending: $pendingMessages)';
 }
 
 /// Callback for managed connection state changes
-typedef ManagedStateCallback = void Function(ManagedConnectionState state);
+typedef ManagedStateCallback = void Function(ManagedGatewayConnectionState state);
 
 /// Manages WebSocket connection lifecycle with network monitoring and message queue
 class ConnectionManager {
@@ -80,9 +80,9 @@ class ConnectionManager {
   ConnectionConfig _config = const ConnectionConfig(version: '0.1.0');
 
   // State
-  ManagedConnectionState _state = const ManagedConnectionState(
+  ManagedGatewayConnectionState _state = ManagedGatewayConnectionState(
     connectionState: GatewayConnectionState.disconnected,
-    networkStatus: NetworkStatus.disconnected,
+    networkStatus: NetworkStatus.disconnected(),
   );
   
   final List<ManagedStateCallback> _stateCallbacks = [];
@@ -110,7 +110,7 @@ class ConnectionManager {
         _logger = logger ?? Logger(printer: PrettyPrinter());
 
   /// Current managed connection state
-  ManagedConnectionState get state => _state;
+  ManagedGatewayConnectionState get state => _state;
 
   /// Whether connection is fully established and authenticated
   bool get isConnected => _state.isConnected;
@@ -137,8 +137,6 @@ class ConnectionManager {
     String? token,
     String locale = 'zh-CN',
   }) async {
-    _storedVersion = version;
-    _storedToken = token;
     _storedLocale = locale;
 
     // Initialize reconnect handler
@@ -159,20 +157,21 @@ class ConnectionManager {
   }
 
   /// Disconnect and stop all monitoring
-  Future<void> disconnect() async {
+  /// Disconnect and cleanup
+  void disconnect() {
     _logger.i('Disconnecting...');
 
     // Stop monitoring
-    await networkMonitor.stop();
+    networkMonitor.stop();
     _stopHeartbeatMonitoring();
 
     // Cancel subscriptions
-    await _clientStateSubscription?.cancel();
-    await _eventSubscription?.cancel();
-    await _networkSubscription?.cancel();
+    _clientStateSubscription?.cancel();
+    _eventSubscription?.cancel();
+    _networkSubscription?.cancel();
 
     // Disconnect client
-    await client.disconnect();
+    client.disconnect();
 
     _updateState(_state.copyWith(
       connectionState: GatewayConnectionState.disconnected,
@@ -290,7 +289,7 @@ class ConnectionManager {
     }
   }
 
-  void _handleClientStateChange(ConnectionState newState) {
+  void _handleClientStateChange(GatewayConnectionState newState) {
     _logger.d('Client state changed: $newState');
 
     if (newState == GatewayConnectionState.disconnected) {
@@ -312,7 +311,7 @@ class ConnectionManager {
   }
 
   void _handleNetworkRestoration(NetworkStatus previous, NetworkStatus current) {
-    _logger.i('Network restored: ${previous.connectionType} -> ${current.connectionType}');
+    _logger.i('Network restored: ${previous.connectionTypes} -> ${current.connectionTypes}');
 
     // If we're disconnected but should be connected, trigger reconnect
     if (_state.connectionState == GatewayConnectionState.disconnected ||
@@ -365,7 +364,7 @@ class ConnectionManager {
     reconnectHandler.handleNetworkRestoration();
   }
 
-  void _updateState(ManagedConnectionState newState) {
+  void _updateState(ManagedGatewayConnectionState newState) {
     _state = newState;
     for (final callback in _stateCallbacks) {
       callback(_state);
@@ -382,16 +381,16 @@ class ConnectionManager {
   }
 }
 
-/// Extension to add copyWith to ManagedConnectionState
-extension ManagedConnectionStateCopyWith on ManagedConnectionState {
-  ManagedConnectionState copyWith({
-    ConnectionState? connectionState,
+/// Extension to add copyWith to ManagedGatewayConnectionState
+extension ManagedGatewayConnectionStateCopyWith on ManagedGatewayConnectionState {
+  ManagedGatewayConnectionState copyWith({
+    GatewayConnectionState? connectionState,
     NetworkStatus? networkStatus,
     bool? isReconnecting,
     int? pendingMessages,
     String? lastError,
   }) {
-    return ManagedConnectionState(
+    return ManagedGatewayConnectionState(
       connectionState: connectionState ?? this.connectionState,
       networkStatus: networkStatus ?? this.networkStatus,
       isReconnecting: isReconnecting ?? this.isReconnecting,

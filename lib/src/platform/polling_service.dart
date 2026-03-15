@@ -3,17 +3,10 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:logger/logger.dart';
-
-import '../api/gateway_client.dart';
-import '../api/gateway_protocol.dart';
-import '../models/session.dart';
-import '../models/message.dart';
-import '../storage/isar/isar_service.dart';
 
 /// Callback dispatcher for WorkManager
 @pragma('vm:entry-point')

@@ -10,7 +10,6 @@ import '../../shared/widgets/error_banner.dart';
 import '../../shared/widgets/error_dialog.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/errors/error_handler.dart';
-import '../../core/api/gateway_client.dart' show GatewayConnectionState;
 
 /// Main chat screen
 class ChatScreen extends ConsumerStatefulWidget {
@@ -198,7 +197,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
 /// Connection status banner widget
 class _ConnectionStatusBanner extends StatelessWidget {
-  final ConnectionState connectionState;
+  final ChatConnectionState connectionState;
   final VoidCallback? onRetry;
 
   const _ConnectionStatusBanner({

@@ -319,7 +319,7 @@ class SessionNotifier extends StateNotifier<SessionState> with ErrorHandlingMixi
 /// Session state provider
 final sessionProvider =
     StateNotifierProvider<SessionNotifier, SessionState>((ref) {
-  return SessionNotifier(ref: ref);
+  return SessionNotifier();
 });
 
 /// Active session provider

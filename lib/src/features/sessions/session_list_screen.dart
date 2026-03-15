@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/session.dart';
 import '../../core/utils/list_optimizer.dart';
+import '../../core/errors/app_exception.dart';
 import '../chat/chat_screen.dart';
 import 'session_controller.dart';
 import 'session_tile.dart';

@@ -8,7 +8,9 @@ import '../../core/models/message.dart';
 import '../../core/utils/list_optimizer.dart';
 import '../../shared/widgets/message_bubble.dart';
 import '../../shared/widgets/streaming_text.dart';
-import 'chat_controller.dart';
+import 'chat_controller.dart' show ChatNotifier, ChatState, chatProvider;
+
+export 'chat_controller.dart' show ChatState;
 
 /// Optimized message list display with DiffUtil and item caching
 class MessageList extends ConsumerStatefulWidget {
@@ -45,6 +47,11 @@ class MessageListState extends ConsumerState<MessageList> {
   // Scroll detection
   bool _isUserScrolling = false;
   bool _autoScrollEnabled = true;
+
+  // Frame time tracking for FPS measurement
+  DateTime? _lastFrameTime;
+  int _frameCount = 0;
+  int _lastMessageCount = 0;
 
   @override
   void initState() {

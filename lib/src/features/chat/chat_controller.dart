@@ -277,7 +277,7 @@ Want to learn more?'''
 
 /// Provider for chat controller
 final chatProvider = StateNotifierProvider.family<ChatNotifier, ChatState, String>(
-  (ref, sessionKey) => ChatNotifier(sessionKey: sessionKey, ref: ref),
+  (ref, sessionKey) => ChatNotifier(sessionKey: sessionKey),
 );
 
 /// Provider for current session key (mock)
@@ -286,14 +286,14 @@ final currentSessionKeyProvider = Provider<String>((ref) {
 });
 
 /// Connection state for the chat
-class ConnectionState {
+class ChatConnectionState {
   final bool isConnected;
   final bool isConnecting;
   final bool isReconnecting;
   final int reconnectAttempts;
   final AppException? lastError;
 
-  const ConnectionState({
+  const ChatConnectionState({
     this.isConnected = false,
     this.isConnecting = false,
     this.isReconnecting = false,
@@ -301,7 +301,7 @@ class ConnectionState {
     this.lastError,
   });
 
-  ConnectionState copyWith({
+  ChatConnectionState copyWith({
     bool? isConnected,
     bool? isConnecting,
     bool? isReconnecting,
@@ -309,7 +309,7 @@ class ConnectionState {
     AppException? lastError,
     bool clearError = false,
   }) {
-    return ConnectionState(
+    return ChatConnectionState(
       isConnected: isConnected ?? this.isConnected,
       isConnecting: isConnecting ?? this.isConnecting,
       isReconnecting: isReconnecting ?? this.isReconnecting,
@@ -323,6 +323,6 @@ class ConnectionState {
 }
 
 /// Connection state provider
-final connectionStateProvider = StateProvider<ConnectionState>((ref) {
-  return const ConnectionState();
+final connectionStateProvider = StateProvider<ChatConnectionState>((ref) {
+  return const ChatConnectionState();
 });

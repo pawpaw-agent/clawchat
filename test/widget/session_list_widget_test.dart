@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clawchat/src/features/sessions/session_list_screen.dart';
+import 'package:clawchat/src/core/utils/list_optimizer.dart';
 
 void main() {
   group('SessionListScreen Widget Tests', () {
