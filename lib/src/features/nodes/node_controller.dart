@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/models/node.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/errors/error_handler.dart';
+import '../../core/api/gateway_api_service.dart';
 
 /// Node state
 class NodeState {
@@ -113,18 +114,44 @@ class InvokeState {
 
 /// Node notifier with error handling
 class NodeNotifier extends StateNotifier<NodeState> with ErrorHandlingMixin {
+  final GatewayApiService? _apiService;
 
-  NodeNotifier() : super(const NodeState()) {
-    _loadMockData();
+  NodeNotifier({GatewayApiService? apiService})
+      : _apiService = apiService,
+        super(const NodeState()) {
+    _loadData();
+  }
+
+  /// Load node data from API or mock
+  Future<void> _loadData() async {
+    state = state.copyWith(isLoading: true);
+
+    try {
+      if (_apiService != null && _apiService!.isConnected) {
+        // Use real API
+        final response = await _apiService!.listNodes();
+        if (response.success && response.data != null) {
+          state = state.copyWith(
+            nodes: response.data!,
+            isLoading: false,
+          );
+          return;
+        }
+      }
+    } catch (e) {
+      // Fall back to mock
+    }
+
+    // Use mock data
+    await _loadMockData();
   }
 
   /// Load mock data for development
-  void _loadMockData() {
-    state = state.copyWith(isLoading: true);
-
+  Future<void> _loadMockData() async {
     // Simulate network delay
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final now = DateTime.now();
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    final now = DateTime.now();
       final mockNodes = [
         Node(
           id: 'node-rasp',
@@ -202,7 +229,6 @@ class NodeNotifier extends StateNotifier<NodeState> with ErrorHandlingMixin {
         nodes: mockNodes,
         isLoading: false,
       );
-    });
   }
 
   /// Fetch node list
