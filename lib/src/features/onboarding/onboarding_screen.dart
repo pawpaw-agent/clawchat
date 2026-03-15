@@ -171,7 +171,6 @@ class OnboardingScreen extends StatelessWidget {
           horizontal: 32,
           vertical: 16,
         ),
-        textStyle: theme.textTheme.titleMedium,
       ),
     );
   }
