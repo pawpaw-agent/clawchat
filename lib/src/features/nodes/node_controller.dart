@@ -390,6 +390,7 @@ class NodeInvokeNotifier extends StateNotifier<InvokeState> with ErrorHandlingMi
 
       // Mock result
       final result = NodeInvokeResult(
+        id: const Uuid().v4(),
         nodeId: nodeId,
         command: command,
         success: true,
@@ -416,6 +417,7 @@ class NodeInvokeNotifier extends StateNotifier<InvokeState> with ErrorHandlingMi
       );
 
       final failedResult = NodeInvokeResult(
+        id: const Uuid().v4(),
         nodeId: nodeId,
         command: command,
         success: false,
