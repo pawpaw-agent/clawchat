@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'settings_controller.dart';
+import '../core/storage/app_settings.dart';
 
 /// Settings screen
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -135,21 +136,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Card(
             child: Column(
               children: [
-                RadioListTile<ThemeMode>(
+                RadioListTile<AppThemeMode>(
                   title: const Text('System Default'),
-                  value: ThemeMode.system,
+                  value: AppThemeMode.system,
                   groupValue: settings.themeMode,
                   onChanged: (value) => _setThemeMode(value!),
                 ),
-                RadioListTile<ThemeMode>(
+                RadioListTile<AppThemeMode>(
                   title: const Text('Light'),
-                  value: ThemeMode.light,
+                  value: AppThemeMode.light,
                   groupValue: settings.themeMode,
                   onChanged: (value) => _setThemeMode(value!),
                 ),
-                RadioListTile<ThemeMode>(
+                RadioListTile<AppThemeMode>(
                   title: const Text('Dark'),
-                  value: ThemeMode.dark,
+                  value: AppThemeMode.dark,
                   groupValue: settings.themeMode,
                   onChanged: (value) => _setThemeMode(value!),
                 ),
@@ -235,7 +236,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _setThemeMode(ThemeMode mode) async {
+  Future<void> _setThemeMode(AppThemeMode mode) async {
     await ref.read(settingsProvider.notifier).setThemeMode(mode);
   }
 }
