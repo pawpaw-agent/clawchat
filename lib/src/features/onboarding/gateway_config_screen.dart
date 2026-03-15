@@ -9,31 +9,6 @@ import '../../core/api/auth_service.dart';
 import '../settings/settings_controller.dart';
 import 'app_bootstrap.dart';
 
-/// Convert HTTP URL to WebSocket URL
-/// - http:// → ws://
-/// - https:// → wss://
-/// - ws:// or wss:// → unchanged
-String _toWebSocketUrl(String url) {
-  final trimmed = url.trim();
-  
-  // Already WebSocket URL
-  if (trimmed.startsWith('ws://') || trimmed.startsWith('wss://')) {
-    return trimmed;
-  }
-  
-  // Convert HTTP to WebSocket
-  if (trimmed.startsWith('http://')) {
-    return trimmed.replaceFirst('http://', 'ws://');
-  }
-  
-  if (trimmed.startsWith('https://')) {
-    return trimmed.replaceFirst('https://', 'wss://');
-  }
-  
-  // No protocol specified, default to wss://
-  return 'wss://$trimmed';
-}
-
 /// Gateway configuration screen
 class GatewayConfigScreen extends ConsumerStatefulWidget {
   final String initialUrl;
@@ -51,7 +26,6 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
   late final TextEditingController _urlController;
   late final TextEditingController _tokenController;
   bool _isTesting = false;
-  bool _showTokenInput = false;
   String? _testResult;
   bool? _testSuccess;
 
@@ -84,14 +58,13 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
           children: [
             // Instructions
             Text(
-              'Enter your OpenClaw Gateway URL to connect.',
+              'Enter your OpenClaw Gateway WebSocket URL.',
               style: theme.textTheme.bodyLarge,
             ),
             const SizedBox(height: 8),
             Text(
               'Examples:\n'
-              '• https://gateway.example.com\n'
-              '• http://192.168.1.100:18789\n'
+              '• wss://gateway.example.com\n'
               '• ws://192.168.1.100:18789',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -104,9 +77,8 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
               controller: _urlController,
               decoration: InputDecoration(
                 labelText: 'Gateway URL',
-                hintText: 'https://your-gateway.com',
+                hintText: 'wss://your-gateway.com',
                 prefixIcon: const Icon(Icons.link),
-                helperText: 'http:// → ws://, https:// → wss://',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -183,55 +155,41 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
             const Divider(),
             const SizedBox(height: 16),
             
-            // Token input section
-            Row(
-              children: [
-                Text(
-                  'Already have a token?',
-                  style: theme.textTheme.titleSmall,
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _showTokenInput = !_showTokenInput;
-                    });
-                  },
-                  child: Text(_showTokenInput ? 'Hide' : 'Enter Token'),
-                ),
-              ],
+            // Token input section (always visible)
+            Text(
+              'Device Token',
+              style: theme.textTheme.titleSmall,
             ),
-            
-            if (_showTokenInput) ...[
-              const SizedBox(height: 8),
-              TextField(
-                controller: _tokenController,
-                decoration: InputDecoration(
-                  labelText: 'Device Token',
-                  hintText: 'Paste your token here',
-                  prefixIcon: const Icon(Icons.vpn_key),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'If you already paired this device, paste the token to skip pairing.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _tokenController,
+              decoration: InputDecoration(
+                labelText: 'Token (optional)',
+                hintText: 'Paste your device token here',
+                prefixIcon: const Icon(Icons.vpn_key),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ],
+              maxLines: 3,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'If you have a token, paste it to skip pairing.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
             
             const SizedBox(height: 32),
             
-            // Continue button
+            // Connect button
             FilledButton.icon(
-              onPressed: _canContinue() ? _continue : null,
+              onPressed: _canConnect() ? _connect : null,
               icon: const Icon(Icons.arrow_forward_rounded),
-              label: const Text(_showTokenInput ? 'Connect with Token' : 'Continue to Pairing'),
+              label: Text(_tokenController.text.trim().isNotEmpty 
+                  ? 'Connect with Token' 
+                  : 'Continue to Pairing'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
@@ -245,21 +203,9 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
     );
   }
 
-  bool _canContinue() {
-    // Can continue if:
-    // 1. Test passed and no token input shown
-    // 2. Or token is provided
-    if (_showTokenInput && _tokenController.text.trim().isNotEmpty) {
-      return _urlController.text.trim().isNotEmpty;
-    }
-    return _testSuccess == true;
-  }
-
-  String get _buttonLabel {
-    if (_showTokenInput && _tokenController.text.trim().isNotEmpty) {
-      return 'Connect with Token';
-    }
-    return 'Continue to Pairing';
+  bool _canConnect() {
+    // Can connect if URL is provided
+    return _urlController.text.trim().isNotEmpty;
   }
 
   Future<void> _testConnection() async {
@@ -269,10 +215,9 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
     });
 
     try {
-      final inputUrl = _urlController.text.trim();
+      final url = _urlController.text.trim();
       
-      // Validate URL format
-      if (inputUrl.isEmpty) {
+      if (url.isEmpty) {
         setState(() {
           _testResult = 'Please enter a Gateway URL';
           _testSuccess = false;
@@ -281,21 +226,25 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
         return;
       }
 
-      // Convert to WebSocket URL
-      final wsUrl = _toWebSocketUrl(inputUrl);
-      
-      // Try to create a Gateway client and test connection
+      // Validate WebSocket URL
+      if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
+        setState(() {
+          _testResult = 'URL must start with ws:// or wss://';
+          _testSuccess = false;
+          _isTesting = false;
+        });
+        return;
+      }
+
+      // Try connection
       final authService = AuthService();
       final client = GatewayClient(
-        gatewayUrl: wsUrl,
+        gatewayUrl: url,
         authService: authService,
       );
 
-      // Attempt to connect with a short timeout
       try {
         await client.connect().timeout(const Duration(seconds: 5));
-        
-        // If we get here, connection was successful
         client.disconnect();
         
         if (mounted) {
@@ -306,7 +255,6 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
           });
         }
       } catch (e) {
-        // Connection failed, but let's check if it's just auth-related
         final errorStr = e.toString().toLowerCase();
         if (errorStr.contains('handshake') || 
             errorStr.contains('unauthorized') ||
@@ -333,18 +281,14 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
     }
   }
 
-  void _continue() async {
-    final wsUrl = _toWebSocketUrl(_urlController.text.trim());
+  void _connect() async {
+    final url = _urlController.text.trim();
+    final token = _tokenController.text.trim();
     
     // If token provided, save and go directly to main
-    if (_showTokenInput && _tokenController.text.trim().isNotEmpty) {
-      final token = _tokenController.text.trim();
-      
-      // Save configuration
-      await ref.read(settingsProvider.notifier).setGatewayUrl(wsUrl);
+    if (token.isNotEmpty) {
+      await ref.read(settingsProvider.notifier).setGatewayUrl(url);
       await ref.read(settingsProvider.notifier).setDeviceToken(token);
-      
-      // Refresh bootstrap state
       ref.read(appBootstrapProvider.notifier).refresh();
       
       if (mounted) {
@@ -359,9 +303,7 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
       if (mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => _PairingScreen(
-              gatewayUrl: wsUrl,
-            ),
+            builder: (context) => _PairingScreen(gatewayUrl: url),
           ),
         );
       }
@@ -369,7 +311,7 @@ class _GatewayConfigScreenState extends ConsumerState<GatewayConfigScreen> {
   }
 }
 
-/// Simple pairing screen placeholder
+/// Simple pairing screen
 class _PairingScreen extends ConsumerStatefulWidget {
   final String gatewayUrl;
 
@@ -382,7 +324,6 @@ class _PairingScreen extends ConsumerStatefulWidget {
 class _PairingScreenState extends ConsumerState<_PairingScreen> {
   String? _pairingCode;
   bool _isPaired = false;
-  String? _error;
 
   @override
   void initState() {
@@ -391,7 +332,6 @@ class _PairingScreenState extends ConsumerState<_PairingScreen> {
   }
 
   Future<void> _startPairing() async {
-    // Simulate pairing
     await Future.delayed(const Duration(seconds: 1));
     
     if (mounted) {
