@@ -114,8 +114,7 @@ class InvokeState {
 /// Node notifier with error handling
 class NodeNotifier extends StateNotifier<NodeState> with ErrorHandlingMixin {
 
-  NodeNotifier({Uuid? uuid})
-        super(const NodeState()) {
+  NodeNotifier() : super(const NodeState()) {
     _loadMockData();
   }
 
