@@ -198,6 +198,8 @@ class StreamingTextFade extends StatefulWidget {
 }
 
 class _StreamingTextFadeState extends State<StreamingTextFade> {
+  // TODO: Use previous text for diff animation
+  // ignore: unused_field
   String _previousText = '';
 
   @override

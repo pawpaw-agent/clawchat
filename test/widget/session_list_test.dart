@@ -319,6 +319,7 @@ void main() {
 
       final sorted = notifier.state.sortedSessions;
       expect(sorted.first.key, session2.key);
+      expect(sorted.last.key, session1.key);
     });
 
     test('activeSessions filters out archived', () async {

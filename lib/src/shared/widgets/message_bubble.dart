@@ -165,9 +165,7 @@ class _MarkdownContent extends StatelessWidget {
         tableHead: TextStyle(color: textColor, fontWeight: FontWeight.bold),
       ),
       onTapLink: (text, href, title) {
-        if (href != null) {
-          _handleLinkTap(context, href);
-        }
+        _handleLinkTap(context, href);
       },
     );
   }

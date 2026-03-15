@@ -175,7 +175,7 @@ class HighlightText extends StatelessWidget {
 
   /// Convert highlight nodes to TextSpan
   TextSpan _convertNodes(List<highlight.Node> nodes, Map<String, TextStyle> theme) {
-    List<TextSpan> spans = [];
+    final List<TextSpan> spans = [];
 
     for (final node in nodes) {
       final nodeClassName = node.className;

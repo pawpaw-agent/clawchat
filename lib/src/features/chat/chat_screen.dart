@@ -152,54 +152,45 @@ class _ConnectionStatus extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // TODO: Get real connection state from provider
-    // For now, show a placeholder
-    final isConnected = false;
+    // For now, show a placeholder (disconnected state)
+    const isConnected = false;
     final theme = Theme.of(context);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: isConnected
-            ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.errorContainer,
+        color: theme.colorScheme.errorContainer,
       ),
       child: Row(
         children: [
           Icon(
-            isConnected ? Icons.check_circle_outline : Icons.pending,
+            Icons.pending,
             size: 16,
-            color: isConnected
-                ? theme.colorScheme.onPrimaryContainer
-                : theme.colorScheme.onErrorContainer,
+            color: theme.colorScheme.onErrorContainer,
           ),
           const SizedBox(width: 8),
           Text(
-            isConnected ? 'Connected' : 'Disconnected',
+            'Disconnected',
             style: TextStyle(
               fontSize: 12,
-              color: isConnected
-                  ? theme.colorScheme.onPrimaryContainer
-                  : theme.colorScheme.onErrorContainer,
+              color: theme.colorScheme.onErrorContainer,
             ),
           ),
-          if (!isConnected) ...[
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () {
-                // TODO: Trigger reconnect
-              },
-              child: Text(
-                'Tap to connect',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onErrorContainer,
-                  decoration: TextDecoration.underline,
-                ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              // TODO: Trigger reconnect
+            },
+            child: Text(
+              'Tap to connect',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onErrorContainer,
+                decoration: TextDecoration.underline,
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
