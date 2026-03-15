@@ -368,9 +368,8 @@ class NodeInvokeNotifier extends StateNotifier<InvokeState> with ErrorHandlingMi
   final String nodeId;
 
   NodeInvokeNotifier({
-    Uuid? uuid,
     required this.nodeId,
-        super(const InvokeState());
+  }) : super(const InvokeState());
 
   /// Invoke a command on the node
   Future<NodeInvokeResult> invokeCommand({
